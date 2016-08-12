@@ -16,7 +16,6 @@
 #include "Adafruit_NeoPixel.h"
 #include "IRremote.h"
 
-// #define DEBUG 1 //uncomment if you want to enable the debug mode
 // DEFINITIONS
 
 int R = 0, G = 0, B = 125; //define variables to store RGB color values
@@ -79,12 +78,12 @@ void setup()
 
   //set initial color
   if (mainStatus   == BOBLIGHT_DISABLED) {
-    setColor(YELLOW); 
+    setColor(YELLOW);
   }
   else {
-    setAllLEDs(0x000000, 0)
+    setAllLEDs(0x000000, 0); //turn off all leds
   }
-  
+
   state = STATE_WAITING;    // Initial state: Waiting for prefix
 }
 
@@ -134,7 +133,6 @@ void loop()
           } // end for Counter
         } // end if Serial
         break;
-
 
       case STATE_DO_DATA:                  // *** Process incoming color data ***
         if ( Serial.available() > 2 )      // if we receive more than 2 chars
@@ -190,9 +188,7 @@ void storeCode(decode_results *results) {
         setColor(codeValue);
       } else if (mainStatus == BOBLIGHT_DISABLED) {
         mainStatus = BOBLIGHT_ENABLED;
-
       }
-      prt(mainStatus);
     }
     else if (codeValue == RED || codeValue == GREEN || codeValue == BLUE) {
       setColor(codeValue);
@@ -219,7 +215,6 @@ void setColor(uint32_t color) {
             REDDirection = COLOR_INCREASE;
           }
         }
-        prt(R);
         break;
       case GREEN:
         if (GREENDirection == COLOR_INCREASE) {
@@ -236,7 +231,6 @@ void setColor(uint32_t color) {
             GREENDirection = COLOR_INCREASE;
           }
         }
-        prt(G);
         break;
       case BLUE:
         if (BLUEDirection == COLOR_INCREASE) {
@@ -253,17 +247,10 @@ void setColor(uint32_t color) {
             BLUEDirection = COLOR_INCREASE;
           }
         }
-        prt(B);
         break;
     }
   }
   setAllLEDs(strip.Color(R, G, B), 10);
 }
 
-void prt(int str)
-{
-#ifdef DEBUG
-  //Serial.println(str);
-#endif
-}
 
