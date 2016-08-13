@@ -1,11 +1,11 @@
 /* Modified and commented by Fra.par
-  myBoblight 1.1
-  12/08/2016
+  myBoblight 1.2
+  13/08/2016
   Addded - Change background color by Sony Bravia remote control
-    RED button = increase/decrease RED in RGB color
-    GREEN button = increase/decrease GREEN in RGB color
-    BLUE button = increase/decrease BLUE in RGB color
+    RED button = on/off off=all leds off
+    GREEN button = change RGB color preset
     YELLOW button = toggle Boblight vs static color enabled/static color/dimmed color
+    BLUE button = change special effects preset
 
   myBoblight is free software and can be distributed and/or modified
   freely as long as the copyright notice remains in place.
@@ -18,7 +18,20 @@
 
 // DEFINITIONS
 
-int R = 0, G = 0, B = 125; //define variables to store RGB color values
+int RGB[] = { 0, 0, 125 }; //define variables to store RGB color values
+//define variables to store RGB color values
+#define MAX_PRESET_INDEX 7 //# of RBG color presets -1
+int RGBPresets[][3] = {
+  { 0, 0, 125 }, //blue
+  { 255, 0, 0 }, //red
+  { 0, 128, 0 }, //green
+  { 100, 0, 100 }, //purple
+  { 255, 120, 0 }, //orange
+  { 10, 0, 100 }, //dark blue
+  { 226, 23, 226 }, //magenta
+  { 255, 255, 0 }, //yellow
+};
+int RGBPresetsIndex = 0; //current RGB color preset
 
 #define DATAPIN    6      // Datapin for WS2812B LED strip
 #define LEDCOUNT   59     // Number of LEDs used for boblight left 16, top 27, right 16
@@ -37,22 +50,20 @@ char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
 #define GREEN   0x32E9 // green button
 #define YELLOW  0x72E9 // yellow button
 #define BLUE    0x12E9 // blue button
+#define BLACK   0x000000 // black color
 //---------------------------------------------------------------------------------------------
-#define BOBLIGHT_ENABLED  true    // BOBLIGHT ENABLED, reveive data from serial
+#define ON  true    // main Status ON
+#define OFF false   // main Status OFF
+#define BOBLIGHT_ENABLED  true    // BOBLIGHT ENABLED, receive data from serial
 #define BOBLIGHT_DISABLED false   // BOBLIGHT DISABLED, set the static color
-#define COLOR_INCREASE false
-#define COLOR_DECREASE true
-#define COLOR_CHANGE_INTERVAL 10
 
 int RECV_PIN = 11;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 int codeType = -1; // The type of code
 unsigned long codeValue; // The code value if not raw
-boolean mainStatus      = BOBLIGHT_DISABLED; //Set the initial value
-boolean REDDirection    = COLOR_INCREASE;
-boolean GREENDirection  = COLOR_INCREASE;
-boolean BLUEDirection   = COLOR_INCREASE;
+boolean mainStatus      = ON; //Set the initial value
+boolean boblStatus      = BOBLIGHT_DISABLED; //Set the initial value
 
 void setColor(uint32_t color);
 
@@ -77,11 +88,11 @@ void setup()
   Serial.begin(BAUDRATE);   // Init serial speed
 
   //set initial color
-  if (mainStatus   == BOBLIGHT_DISABLED) {
-    setColor(YELLOW);
+  if (mainStatus   == ON && boblStatus   == BOBLIGHT_DISABLED) {
+    setColor(BLACK); //set the default static color
   }
   else {
-    setAllLEDs(0x000000, 0); //turn off all leds
+    setAllLEDs(BLACK, 0); //turn off all leds
   }
 
   state = STATE_WAITING;    // Initial state: Waiting for prefix
@@ -96,7 +107,7 @@ void loop()
     irrecv.resume(); // resume receiver
   }
 
-  if (mainStatus == BOBLIGHT_ENABLED) // if boblight is enabled read data from serial
+  if (mainStatus == ON && boblStatus == BOBLIGHT_ENABLED) // if boblight is enabled read data from serial
   {
     switch (state)
     {
@@ -182,75 +193,49 @@ void storeCode(decode_results *results) {
   codeType = results->decode_type;
   codeValue = results->value;
   if (codeType == REMOTE_TYPE) {
+
     if (codeValue == YELLOW) { //toggle boblight
-      if (mainStatus == BOBLIGHT_ENABLED) {
-        mainStatus = BOBLIGHT_DISABLED;
+      if (boblStatus == BOBLIGHT_ENABLED) {
+        boblStatus = BOBLIGHT_DISABLED;
         setColor(codeValue);
-      } else if (mainStatus == BOBLIGHT_DISABLED) {
-        mainStatus = BOBLIGHT_ENABLED;
+      } else if (boblStatus == BOBLIGHT_DISABLED) {
+        boblStatus = BOBLIGHT_ENABLED;
       }
     }
-    else if (codeValue == RED || codeValue == GREEN || codeValue == BLUE) {
+    else if (codeValue == RED) { // ON/OFF
+      switch (mainStatus) {
+        case ON:
+          mainStatus = OFF;
+          setAllLEDs(0x000000, 0);
+          break;
+        case OFF:
+          mainStatus = ON;
+          setColor(YELLOW);
+          break;
+      }
+    }
+    else if (codeValue == GREEN || codeValue == BLUE) {
       setColor(codeValue);
     }
   }
 }
 
-void setColor(uint32_t color) {
-  if (mainStatus == BOBLIGHT_DISABLED) {
-    switch (color)
-    {
-      case RED:
-        if (REDDirection == COLOR_INCREASE) {
-          R = R + COLOR_CHANGE_INTERVAL;
-          if (R > 255) {
-            R = 255;
-            REDDirection = COLOR_DECREASE;
-          }
-        }
-        else if (REDDirection == COLOR_DECREASE) {
-          R = R - COLOR_CHANGE_INTERVAL;
-          if (R < 0) {
-            R = 0;
-            REDDirection = COLOR_INCREASE;
-          }
-        }
-        break;
-      case GREEN:
-        if (GREENDirection == COLOR_INCREASE) {
-          G = G + COLOR_CHANGE_INTERVAL;
-          if (G > 255) {
-            G = 255;
-            GREENDirection = COLOR_DECREASE;
-          }
-        }
-        else if (GREENDirection == COLOR_DECREASE) {
-          G = G - COLOR_CHANGE_INTERVAL;
-          if (G < 0) {
-            G = 0;
-            GREENDirection = COLOR_INCREASE;
-          }
-        }
-        break;
-      case BLUE:
-        if (BLUEDirection == COLOR_INCREASE) {
-          B = B + COLOR_CHANGE_INTERVAL;
-          if (B > 255) {
-            B = 255;
-            BLUEDirection = COLOR_DECREASE;
-          }
-        }
-        else if (BLUEDirection == COLOR_DECREASE) {
-          B = B - COLOR_CHANGE_INTERVAL;
-          if (B < 0) {
-            B = 0;
-            BLUEDirection = COLOR_INCREASE;
-          }
-        }
-        break;
+void setColor(uint32_t color = 0x000000) {
+  int i;
+  if (mainStatus == ON && boblStatus == BOBLIGHT_DISABLED) {
+
+    if (color == GREEN) { //change the RGB preset color
+      RGBPresetsIndex = RGBPresetsIndex + 1;
+      if (RGBPresetsIndex > MAX_PRESET_INDEX) {
+        RGBPresetsIndex = 0;
+      }
+      RGB[0] = RGBPresets[RGBPresetsIndex][0];
+      RGB[1] = RGBPresets[RGBPresetsIndex][1];
+      RGB[2] = RGBPresets[RGBPresetsIndex][2];
     }
+
   }
-  setAllLEDs(strip.Color(R, G, B), 10);
+  setAllLEDs(strip.Color(RGB[0], RGB[1], RGB[2]), 10);
 }
 
 
