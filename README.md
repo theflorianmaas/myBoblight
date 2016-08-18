@@ -23,11 +23,12 @@ If the number of leds is huge the +5v output on Arduino is not able to supply en
 
 The used remote control is a Sony. You can try with different brands changing the brand name and the key codes. See the IRremote library for further details.
 
-#define REMOTE_TYPE SONY
+#define REMOTETYPE SONY
 #define RED     	0x52E9 // red button
 #define GREEN   	0x32E9 // green button
 #define YELLOW  	0x72E9 // yellow button
-#define BLUE    	0x12E9 // blue button
+#define BLUE    	0x12E9 // blue button_
+
 
 ### Usage
 
