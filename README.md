@@ -17,7 +17,7 @@ The current sketch uses the pin 2 and the interrupt 0.
 Pin 2 = ir receiver
 Pin 6 = Led strip data
 
-![]({{site.baseurl}}/myBoblightIr3.png)
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/myBoblightIr3.png)
 
 If the number of leds is huge the +5v output on Arduino is not able to supply enought current. In this case an external power source is connected in parallel.
 
