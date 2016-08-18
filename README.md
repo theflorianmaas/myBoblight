@@ -35,9 +35,17 @@ The used remote control is a Sony. You can try with different brands changing th
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/remotecontrol.png?raw=true)
 
 - RED 		On/Off  Off=all leds off
-- GREEN		Change the static color when the Static function is selected
-- YELLOW	Function selector. Static Color/Boblight/Pattern 
-- BLUE		Change the pattern when the Pattern function is selected
+- GREEN		Change the static color when the Static mode is selected
+- YELLOW	Mode selector. Static Color/Boblight/Pattern 
+- BLUE		Change the pattern when the Pattern mode is selected
 
 
+Static mode
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/static.png?raw=true)
+
+Boblight mode
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/boblightstatic.png?raw=true)
+
+Pattern mode
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/pattern.png?raw=true)
 
