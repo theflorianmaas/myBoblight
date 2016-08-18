@@ -17,7 +17,7 @@ The current sketch uses the pin 2 and the interrupt 0.
 Pin 2 = ir receiver
 Pin 6 = Led strip data
 
-![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/myBoblightIr3.png)
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblightIr3.png)
 
 If the number of leds is huge the +5v output on Arduino is not able to supply enought current. In this case an external power source is connected in parallel.
 
@@ -31,9 +31,7 @@ The used remote control is a Sony. You can try with different brands changing th
 
 ### Usage
 
-![]({{site.baseurl}}//remotecontrol.png)
-
-https://github.com/theflorianmaas/myBoblight/blob/master/myBoblightIr3.png?raw=true
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/remotecontrol.png?raw=true)
 
 RED 	On/Off  Off=all leds off
 GREEN	Change the static color when the Static function is selected
