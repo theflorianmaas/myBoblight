@@ -44,7 +44,7 @@ Static mode
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/static.png?raw=true)
 
 Boblight mode
-![](https://github.com/theflorianmaas/myBoblight/blob/master/images/boblightstatic.png?raw=true)
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/boblight.png?raw=true)
 
 Pattern mode
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/pattern.png?raw=true)
