@@ -1,9 +1,8 @@
 # myBoblight
-Arduino sketch to link Boblight to a WS2812B LEDs strip.
+Arduino sketch to drive a WS2812B LEDs strip with Boblight and static colors.
 
-It uses the Adafruit_NeoPixel and IRemote libraries.
+It uses the FASTLED and IRemote libraries.
 
-You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control or set a static color
-Need a IR receiver like a TSOP17 to enable this feature
+You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control, set a static color or a color pattern.
 
-
+Need a IR receiver like a TSOP31283 to enable this feature
