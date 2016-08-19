@@ -1,18 +1,25 @@
 # myBoblight
-Arduino sketch to drive a WS2812B LEDs strip with Boblight and static colors.
 
-It uses the FASTLED and IRemote libraries.
+This is an enanhancement of the project described here:
+
+[http://www.tweaking4all.com/home-theatre/xbmc/xbmc-boblight-openelec-ws2811-ws2812/](http://www.tweaking4all.com/home-theatre/xbmc/xbmc-boblight-openelec-ws2811-ws2812/)
+
+Arduino sketch to drive a **WS2812B** LEDs strip with Boblight or selected static colors.
+As additional feature it integrates a IR Receiver in order to change the backlight configuration by a TV remote control. 
 
 You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control, set a static color or a color pattern.
 
-Need a IR receiver like a TSOP31238 to enable this feature.
+Need a IR receiver like a **TSOP31238** to enable this feature.
 
 ###Technical overview
 
 This sketch has been tested on Arduino Uno and Aduino Duemilanove. 
 It should work on others models, but you have to change the ir receiver pin, according to the interrupt configuration.
-
 The current sketch uses the pin 2 and the interrupt 0.
+
+It needs the **FASTLED** and **IRemote** libraries.
+
+####Pin configuration
 
 Pin 2 = ir receiver
 Pin 6 = Led strip data
@@ -34,10 +41,10 @@ The used remote control is a Sony. You can try with different brands changing th
 
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/remotecontrol.png?raw=true)
 
-- RED 		On/Off  Off=all leds off
-- GREEN		Change the static color when the Static mode is selected
-- YELLOW	Mode selector. Static Color/Boblight/Pattern 
-- BLUE		Change the pattern when the Pattern mode is selected
+- **RED** 		On/Off  Off=all leds off
+- **GREEN**		Change the static color when the Static mode is selected
+- **YELLOW**	Mode selector. Static Color/Boblight/Pattern 
+- **BLUE**		Change the pattern when the Pattern mode is selected
 
 
 Static mode
@@ -48,4 +55,3 @@ Boblight mode
 
 Pattern mode
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/pattern.png?raw=true)
-
