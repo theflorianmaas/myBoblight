@@ -112,6 +112,7 @@ TxStatusResponse txStatus = TxStatusResponse();
 void setup()
 {
   pinMode(13, OUTPUT);
+  pinMode(12, OUTPUT);
   attachInterrupt(0, irdata, CHANGE);
   irrecv.enableIRIn(); // Start the receiver
   irrecv.blink13(true);
@@ -159,19 +160,16 @@ void loop()
               if ( Serial.available() > 0 )
               {
                 readSerial = Serial.read();      // Read one character
-
                 if ( readSerial == prefix[0] )   // if this character is 1st prefix char
                 {
                   state = STATE_DO_PREFIX;  // then set state to handle prefix
                 }
               }
               break;
-
             case STATE_DO_PREFIX:                // *** Processing Prefix ***
               if ( Serial.available() > sizeof(prefix) - 2 )
               {
                 Serial.readBytes(buffer, sizeof(prefix) - 1);
-
                 for ( int counter = 0; counter < sizeof(prefix) - 1; counter++)
                 {
                   if ( buffer[counter] == prefix[counter + 1] )
@@ -197,9 +195,9 @@ void loop()
               }
 
               if (currentLED == LEDCOUNT) { //if it is the last LED send RGB to the satellite
-                digitalWrite(13, HIGH);
+                digitalWrite(12, HIGH);
                 sendSatellite (buffer[0], buffer[1], buffer[2]);
-                digitalWrite(13, LOW);
+                digitalWrite(12, LOW);
               }
 
               if ( currentLED > LEDCOUNT )       // Reached the last LED? Display it!
@@ -247,6 +245,7 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
 void storeCode(decode_results * results) {
   codeType = results->decode_type;
   codeValue = results->value;
+  //Serial.println(codeValue,HEX);
   if (codeType == REMOTE_TYPE) {
     switch (codeValue) {
       case YELLOW: //toggle boblight
@@ -261,15 +260,10 @@ void storeCode(decode_results * results) {
                 modeStatus = STATIC;
                 state = STATE_WAITING;
                 FastLED.clear();
+                setColor(DEFAULT); //set the default static color
+                sendSatellite (DEFAULT, DEFAULT, DEFAULT);
                 //sendSatellite (0x0, 0x0, 0x0);
                 break;
-                /*
-                  case PATTERN:
-                  modeStatus = STATIC;
-                  setColor(codeValue);
-                  sendSatellite (0x0, 0x0, 0x0);
-                  break;
-                */
             }
             break;
         }
@@ -314,7 +308,7 @@ void storeCode(decode_results * results) {
         */
     }
   }
-  delay(50);
+  delay(5);
 }
 
 void setColor(uint32_t color = DEFAULT) {
@@ -337,7 +331,7 @@ void setColor(uint32_t color = DEFAULT) {
 
 void showStrip() {
   FastLED.show();
-  delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
+  //delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
