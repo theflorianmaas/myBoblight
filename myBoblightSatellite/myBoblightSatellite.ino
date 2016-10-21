@@ -22,14 +22,23 @@
 
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
 
-#define DATAPIN             6      // Datapin for WS2812B LED strip
-#define LEDCOUNT            50     // Number of LEDs used for boblight left 16, top 27, right 16
+#define DATAPIN  2      // Datapin for WS2812B LED strip
+#define R1  6           // Ikea Dioder pins
+#define B1  7
+#define G1  8
+#define R2  9
+#define B2  10
+#define G2  11
+
+//#define LEDCOUNT          50     // Number of LEDs used WS2812b
+#define LEDCOUNT            1      // Ikea Dioder
 #define SHOWDELAY           200    // Delay in micro seconds before showing default 200
 #define BAUDRATE            38400 //115200 // Serial port speed
 #define LEDTYPE             WS2812B
 #define COLORORDER          GRB
 #define BRIGHTNESS          100
 #define FRAMES_PER_SECOND   120
+
 
 struct CRGB leds[LEDCOUNT];
 
@@ -53,10 +62,21 @@ uint8_t option = 0;
 
 void setup()
 {
+  //2 channels Ikea Dioder
+  // Channel 1
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(8, OUTPUT);
+  // Channel 2
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
 
+/*
   FastLED.addLeds<LEDTYPE, DATAPIN, COLORORDER>(leds, LEDCOUNT).setCorrection(TypicalLEDStrip);  // Use this for WS2812B
   // set master brightness control
   FastLED.setBrightness(BRIGHTNESS);
+*/
 
   Serial.begin(9600);   // Init serial speed
   xbee.setSerial(XbeeSerial);
@@ -100,7 +120,7 @@ void setAllLEDs(byte r, byte g, byte b)
   {
     setPixel(counter, r, g, b);  // .. set the color
   } // for Counter
-  showStrip();    // Show the LED color
+  //showStrip();    // Show the LED color WS28212b
 } // setAllLEDs
 
 
@@ -112,9 +132,19 @@ void showStrip() {
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
-  leds[Pixel].r = red;
-  leds[Pixel].g = green;
-  leds[Pixel].b = blue;
+  //if ws2812b
+  //leds[Pixel].r = red;
+  //leds[Pixel].g = green;
+  //leds[Pixel].b = blue;
+
+  //if Ikea Dioder
+  analogWrite(R1, red);
+  analogWrite(R2, red);
+  analogWrite(G2, green);
+  analogWrite(G2, green);
+  analogWrite(B2, blue);
+  analogWrite(B2, blue);
+
 }
 
 
