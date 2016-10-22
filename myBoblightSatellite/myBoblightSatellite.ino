@@ -23,12 +23,9 @@
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
 
 #define DATAPIN  2      // Datapin for WS2812B LED strip
-#define R1  6           // Ikea Dioder pins
-#define B1  7
-#define G1  8
-#define R2  9
-#define B2  10
-#define G2  11
+int pinRed[] = { 6, 9 };         // Ikea Dioder pins
+int pinBlue[] = { 7, 10 };
+int pinGreen[] = { 8, 11 };
 
 //#define LEDCOUNT          50     // Number of LEDs used WS2812b
 #define LEDCOUNT            1      // Ikea Dioder
@@ -64,19 +61,19 @@ void setup()
 {
   //2 channels Ikea Dioder
   // Channel 1
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
-  pinMode(8, OUTPUT);
+  pinMode(pinRed[0], OUTPUT);
+  pinMode(pinBlue[0], OUTPUT);
+  pinMode(pinGreen[0], OUTPUT);
   // Channel 2
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(11, OUTPUT);
+  pinMode(pinRed[1], OUTPUT);
+  pinMode(pinBlue[1], OUTPUT);
+  pinMode(pinGreen[1], OUTPUT);
 
-/*
-  FastLED.addLeds<LEDTYPE, DATAPIN, COLORORDER>(leds, LEDCOUNT).setCorrection(TypicalLEDStrip);  // Use this for WS2812B
-  // set master brightness control
-  FastLED.setBrightness(BRIGHTNESS);
-*/
+  /*
+    FastLED.addLeds<LEDTYPE, DATAPIN, COLORORDER>(leds, LEDCOUNT).setCorrection(TypicalLEDStrip);  // Use this for WS2812B
+    // set master brightness control
+    FastLED.setBrightness(BRIGHTNESS);
+  */
 
   Serial.begin(9600);   // Init serial speed
   xbee.setSerial(XbeeSerial);
@@ -138,12 +135,12 @@ void setPixel(int Pixel, byte red, byte green, byte blue) {
   //leds[Pixel].b = blue;
 
   //if Ikea Dioder
-  analogWrite(R1, red);
-  analogWrite(R2, red);
-  analogWrite(G2, green);
-  analogWrite(G2, green);
-  analogWrite(B2, blue);
-  analogWrite(B2, blue);
+  analogWrite(pinRed[0], red);
+  analogWrite(pinBlue[0], blue);
+  analogWrite(pinGreen[0], green);
+  analogWrite(pinRed[1], red);
+  analogWrite(pinBlue[1], blue);
+  analogWrite(pinGreen[1], green);
 
 }
 

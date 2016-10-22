@@ -1,6 +1,6 @@
 /* Modified and commented by Fra.par
   myBoblightHUB
-  18/08/2016
+  21/10/2016
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -226,7 +226,7 @@ void irdata() {
 // If 'wait'>0 then it will show a swipe from start to end
 void setAllLEDs(byte r, byte g, byte b, int wait)
 {
-  for ( int counter = 0; counter < LEDCOUNT; counter++ )    // For each LED
+  for ( int counter = 0; counter < LEDCOUNT; counter++ )  // For each LED
   {
     setPixel(counter, r, g, b);  // .. set the color
     if ( wait > 0 )                       // if a wait time was set then
@@ -262,7 +262,6 @@ void storeCode(decode_results * results) {
                 FastLED.clear();
                 setColor(DEFAULT); //set the default static color
                 sendSatellite (DEFAULT, DEFAULT, DEFAULT);
-                //sendSatellite (0x0, 0x0, 0x0);
                 break;
             }
             break;
@@ -272,11 +271,13 @@ void storeCode(decode_results * results) {
         switch (mainStatus) {
           case ON:
             mainStatus = OFF;
-            setAllLEDs(DEFAULT, DEFAULT, DEFAULT, 0);
+            setAllLEDs(0x0, 0x0, 0x0, 0);
+            sendSatellite (0x0, 0x0, 0x0);
             break;
           case OFF:
             mainStatus = ON;
             setColor(DEFAULT);
+            sendSatellite (DEFAULT, DEFAULT, DEFAULT);
             break;
         }
         break;
@@ -293,18 +294,15 @@ void storeCode(decode_results * results) {
         break;
         /*
           case BLUE:
-           switch (mainStatus) {
-             case ON:
-               switch (modeStatus) {
-                 case PATTERN:
-                   nextPattern();
-                   FastLED.clear();
-                   showPattern();
-                   break;
-               }
-               break;
-           }
-           break;
+          switch (satelliteStatus) {
+            case ON:
+              satelliteStatus = OFF;
+              break;
+            case OFF:
+              satelliteStatus = ON;
+              break;
+          }
+          break;
         */
     }
   }
