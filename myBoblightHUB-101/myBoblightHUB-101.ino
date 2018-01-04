@@ -1,6 +1,6 @@
 /* Modified and commented by Fra.par
   myBoblightHUB 101
-  30/12/2017
+  04/01/2018
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -17,14 +17,14 @@
   Use of this code is entirely at your own risk.
 */
 
-//#include "FastLED.h"                                          // FastLED library.
+
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+#include <avr/power.h>
+#endif
 #include "IRremote.h"
 #include <XBee.h>
 #include <SoftwareSerial.h>
-
-#if FASTLED_VERSION < 3001000
-//#error "Requires FastLED 3.1 or later; check github for latest code."
-#endif
 
 //DEFINITIONS
 
@@ -49,13 +49,31 @@ int RGBPresetsIndex = 0; //current RGB color preset
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
 #define SHOWDELAY           200    // Delay in micro seconds before showing default 200
-#define BAUDRATE            115200 //115200 // Serial port speed
-#define LEDTYPE             WS2812B
-#define COLORORDER          GRB
-#define BRIGHTNESS          100
-#define FRAMES_PER_SECOND   120
+#define BAUDRATE            115200//115200 // Serial port speed
+//#define LEDTYPE             WS2812B
+//#define COLORORDER          GRB
+//#define BRIGHTNESS          100
+//#define FRAMES_PER_SECOND   120
 
-//struct CRGB leds[LEDCOUNT];                                   // Initializxe our array
+/// Representation of an RGB pixel (Red, Green, Blue)
+struct CRGB {
+  struct {
+    union {
+      uint8_t r;
+      uint8_t red;
+    };
+    union {
+      uint8_t g;
+      uint8_t green;
+    };
+    union {
+      uint8_t b;
+      uint8_t blue;
+    };
+  };
+};
+
+CRGB leds[LEDCOUNT];                                   // Initializxe our array
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
 char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
@@ -109,6 +127,8 @@ uint8_t payload[6];
 Tx16Request tx = Tx16Request(0xFFFF, payload, sizeof(payload));
 TxStatusResponse txStatus = TxStatusResponse();
 
+Adafruit_NeoPixel FastLED = Adafruit_NeoPixel(LEDCOUNT, DATAPIN);
+
 void setup()
 {
   pinMode(13, OUTPUT);
@@ -116,9 +136,14 @@ void setup()
   attachInterrupt(0, irdata, CHANGE);
   irrecv.enableIRIn(); // Start the receiver
   irrecv.blink13(true);
-//  FastLED.addLeds<LEDTYPE, DATAPIN, COLORORDER>(leds, LEDCOUNT).setCorrection(TypicalLEDStrip);  // Use this for WS2812B
-  // set master brightness control
-//  FastLED.setBrightness(BRIGHTNESS);
+  // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
+#if defined (__AVR_ATtiny85__)
+  if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
+#endif
+  // End of trinket special code
+  FastLED.begin(); // This initializes the NeoPixel library.
+  FastLED.show();
+  //setAllLEDs(100, 100, 100, 10);
 
   Serial.begin(BAUDRATE);   // Init serial speed
   xbee.setSerial(XbeeSerial);
@@ -135,6 +160,8 @@ void setup()
     sendSatellite (0x0, 0x0, 0x0);
   }
   state = STATE_WAITING;    // Initial state: Waiting for prefix
+  delay(7000);
+  Serial.println("Ricevuto");
 }
 
 void loop()
@@ -253,13 +280,13 @@ void storeCode(decode_results * results) {
           case ON:
             switch (modeStatus) {
               case STATIC:
-//                FastLED.clear();
+                //                FastLED.clear();
                 modeStatus = BOBLIGHT;
                 break;
               case BOBLIGHT:
                 modeStatus = STATIC;
                 state = STATE_WAITING;
-//                FastLED.clear();
+                //                FastLED.clear();
                 setColor(DEFAULT); //set the default static color
                 sendSatellite (DEFAULT, DEFAULT, DEFAULT);
                 break;
@@ -328,14 +355,15 @@ void setColor(uint32_t color = DEFAULT) {
 }
 
 void showStrip() {
-//  FastLED.show();
-  //delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
+  FastLED.show();
+  delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
-//  leds[Pixel].r = red;
-//  leds[Pixel].g = green;
-//  leds[Pixel].b = blue;
+  FastLED.setPixelColor(Pixel, FastLED.Color(red,green,blue));
+  //leds[Pixel].r = red;
+  //leds[Pixel].g = green;
+  //leds[Pixel].b = blue;
 }
 
 void sendSatellite (byte red, byte green, byte blue) {
@@ -349,4 +377,5 @@ void sendSatellite (byte red, byte green, byte blue) {
   xbee.send(tx);
 
 }
+
 
