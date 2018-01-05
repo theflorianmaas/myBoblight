@@ -50,30 +50,6 @@ int RGBPresetsIndex = 0; //current RGB color preset
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
 #define SHOWDELAY           200    // Delay in micro seconds before showing default 200
 #define BAUDRATE            115200//115200 // Serial port speed
-//#define LEDTYPE             WS2812B
-//#define COLORORDER          GRB
-//#define BRIGHTNESS          100
-//#define FRAMES_PER_SECOND   120
-
-/// Representation of an RGB pixel (Red, Green, Blue)
-struct CRGB {
-  struct {
-    union {
-      uint8_t r;
-      uint8_t red;
-    };
-    union {
-      uint8_t g;
-      uint8_t green;
-    };
-    union {
-      uint8_t b;
-      uint8_t blue;
-    };
-  };
-};
-
-CRGB leds[LEDCOUNT];                                   // Initializxe our array
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
 char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
@@ -99,7 +75,7 @@ decode_results results;
 int codeType = -1; // The type of code
 unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
-int modeStatus  = STATIC; //Set the initial mode
+int modeStatus  = BOBLIGHT; // STATIC //Set the initial mode
 volatile boolean irstate = false;
 #define RECEIVED   true    // - ir data received
 #define IDLE       false   // - ir idle
@@ -160,8 +136,6 @@ void setup()
     sendSatellite (0x0, 0x0, 0x0);
   }
   state = STATE_WAITING;    // Initial state: Waiting for prefix
-  delay(7000);
-  Serial.println("Ricevuto");
 }
 
 void loop()
@@ -360,7 +334,7 @@ void showStrip() {
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
-  FastLED.setPixelColor(Pixel, FastLED.Color(red,green,blue));
+  FastLED.setPixelColor(Pixel, FastLED.Color(red, green, blue));
   //leds[Pixel].r = red;
   //leds[Pixel].g = green;
   //leds[Pixel].b = blue;
