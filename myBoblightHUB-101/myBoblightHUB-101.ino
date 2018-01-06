@@ -27,7 +27,6 @@
 #include <SoftwareSerial.h>
 
 //DEFINITIONS
-
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
 //define variables to store RGB color values
 #define MAX_PRESET_INDEX 7 //# of RBG color presets -1
@@ -45,31 +44,36 @@ byte RGBPresets[][3] = {
 
 int RGBPresetsIndex = 0; //current RGB color preset
 
-#define RECV_PIN            2      // ir led
+#define RECV_PIN            3      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
-#define SHOWDELAY           200    // Delay in micro seconds before showing default 200
-#define BAUDRATE            115200//115200 // Serial port speed
+#define BAUDRATE            115200 // Serial port speed
+#define BRIGHTNESS          100
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
 char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
+uint8_t sizeOfPrefix = sizeof(prefix);
 
 // Remote control Definitions
 // Change these values if you a different remote control. See the IRemote library for reference
 //---------------------------------------------------------------------------------------------
 #define REMOTE_TYPE SONY
-#define RED     0x52E9 // red button
-#define GREEN   0x32E9 // green button
-#define YELLOW  0x72E9 // yellow button
-#define BLUE    0x12E9 // blue button
-#define DEFAULT 0x0    // default value
+#define RED      0x52E9 // red button
+#define GREEN    0x32E9 // green button
+#define YELLOW   0x72E9 // yellow button
+#define BLUE     0x12E9 // blue button
+#define DEFAULTP 0x0    // default color preset
+//---------------------------------------------------------------------------------------------
+
 //---------------------------------------------------------------------------------------------
 #define ON        1    // main Status ON
 #define OFF       0   // main Status OFF
 #define STATIC    10       // Static color mode  
 #define BOBLIGHT  20       // Boblight mode
-#define PATTERN   30       // Pattern mode
-
+#
+//---------------------------------------------------------------------------------------------
+// IR definition
+//---------------------------------------------------------------------------------------------
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 int codeType = -1; // The type of code
@@ -82,13 +86,13 @@ volatile boolean irstate = false;
 
 void setColor(uint32_t color);
 
-int state;                   // Define current state
+uint8_t state;               // - Define current status
 #define STATE_WAITING   1    // - Waiting for prefix
 #define STATE_DO_PREFIX 2    // - Processing prefix
 #define STATE_DO_DATA   3    // - Handling incoming LED colors
 
-int readSerial;           // Read Serial data (1)
-int currentLED;           // Needed for assigning the color to the right LED
+uint8_t readSerial;           // Read Serial data (1)
+uint8_t currentLED;           // Needed for assigning the color to the right LED
 
 // Satellite config
 // Define SoftSerial TX/RX pins
@@ -103,13 +107,14 @@ uint8_t payload[6];
 Tx16Request tx = Tx16Request(0xFFFF, payload, sizeof(payload));
 TxStatusResponse txStatus = TxStatusResponse();
 
-Adafruit_NeoPixel FastLED = Adafruit_NeoPixel(LEDCOUNT, DATAPIN);
+Adafruit_NeoPixel LEDS = Adafruit_NeoPixel(LEDCOUNT, DATAPIN);
 
 void setup()
 {
   pinMode(13, OUTPUT);
   pinMode(12, OUTPUT);
-  attachInterrupt(0, irdata, CHANGE);
+  pinMode(RECV_PIN, INPUT);
+  //attachInterrupt(digitalPinToInterrupt(RECV_PIN), irdata, CHANGE);
   irrecv.enableIRIn(); // Start the receiver
   irrecv.blink13(true);
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
@@ -117,9 +122,9 @@ void setup()
   if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
 #endif
   // End of trinket special code
-  FastLED.begin(); // This initializes the NeoPixel library.
-  FastLED.show();
-  //setAllLEDs(100, 100, 100, 10);
+  LEDS.begin(); // This initializes the NeoPixel library.
+  LEDS.setBrightness(BRIGHTNESS);
+  LEDS.show();
 
   Serial.begin(BAUDRATE);   // Init serial speed
   xbee.setSerial(XbeeSerial);
@@ -128,8 +133,8 @@ void setup()
 
   //set initial color
   if (mainStatus == ON && modeStatus == STATIC) {
-    setColor(DEFAULT); //set the default static color
-    sendSatellite (DEFAULT, DEFAULT, DEFAULT);
+    setColor(DEFAULTP); //set the default static color
+    sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
   }
   else if (mainStatus == ON && modeStatus == BOBLIGHT) {
     setAllLEDs(0x0, 0x0, 0x0, 0); //turn off all leds
@@ -140,86 +145,83 @@ void setup()
 
 void loop()
 {
-  if (irstate == RECEIVED) {
-    //check if there is a command from the remote control and it is true analyze the result
-    if (irrecv.decode(&results))
-    {
-      storeCode(&results);
-      irrecv.resume(); // resume receiver
-    }
-    irstate == IDLE;
+
+  // if (irstate == RECEIVED) {
+  //check if there is a command from the remote control and it is true analyze the result
+  if (irrecv.decode(&results))
+  {
+    storeCode(&results);
+    irrecv.resume(); // resume receiver
   }
+  //  irstate == IDLE;
+  //}
 
-  switch (mainStatus) {
-    case ON:
-      switch (modeStatus) {
-        // if BOBLIGHT mode is selected data from serial and update leds
-        case BOBLIGHT:
-          switch (state)
+  if (mainStatus == ON) {
+    if (modeStatus == BOBLIGHT) {
+      // if BOBLIGHT mode is selected data from serial and update leds
+      switch (state)
+      {
+        case STATE_WAITING:                  // *** Waiting for prefix ***
+          if ( Serial.available() > 0 )
           {
-            case STATE_WAITING:                  // *** Waiting for prefix ***
-              if ( Serial.available() > 0 )
-              {
-                readSerial = Serial.read();      // Read one character
-                if ( readSerial == prefix[0] )   // if this character is 1st prefix char
-                {
-                  state = STATE_DO_PREFIX;  // then set state to handle prefix
-                }
-              }
-              break;
-            case STATE_DO_PREFIX:                // *** Processing Prefix ***
-              if ( Serial.available() > sizeof(prefix) - 2 )
-              {
-                Serial.readBytes(buffer, sizeof(prefix) - 1);
-                for ( int counter = 0; counter < sizeof(prefix) - 1; counter++)
-                {
-                  if ( buffer[counter] == prefix[counter + 1] )
-                  {
-                    state = STATE_DO_DATA;     // Received character is in prefix, continue
-                    currentLED = 0;            // Set current LED to the first one
-                  }
-                  else
-                  {
-                    state = STATE_WAITING;     // Crap, one of the received chars is NOT in the prefix
-                    break;                     // Exit, to go back to waiting for the prefix
-                  } // end if buffer
-                } // end for Counter
-              } // end if Serial
-              break;
-
-            case STATE_DO_DATA: // *** Process incoming color data ***
-              if ( Serial.available() > 2 )      // if we receive more than 2 chars
-              {
-                Serial.readBytes( buffer, 3 );   // Abuse buffer to temp store 3 charaters
-                if (mainStatus == ON && modeStatus == BOBLIGHT)
-                  setPixel( currentLED++, buffer[0], buffer[1], buffer[2]);  // and assing to LEDs
-              }
-
-              if (currentLED == LEDCOUNT) { //if it is the last LED send RGB to the satellite
-                digitalWrite(12, HIGH);
-                sendSatellite (buffer[0], buffer[1], buffer[2]);
-                digitalWrite(12, LOW);
-              }
-
-              if ( currentLED > LEDCOUNT )       // Reached the last LED? Display it!
-              {
-                if (mainStatus == ON && modeStatus == BOBLIGHT) {
-                  showStrip();
-                }
-                state = STATE_WAITING;         // Reset to waiting ...
-                currentLED = 0;                // and go to LED one
-                break;                         // and exit ... and do it all over again
-              }
-              break;
-          } // switch(state)
+            readSerial = Serial.read();      // Read one character
+            if ( readSerial == prefix[0] )   // if this character is 1st prefix char
+            {
+              state = STATE_DO_PREFIX;  // then set state to handle prefix
+            }
+          }
           break;
-      }
-      break;
+        case STATE_DO_PREFIX:                // *** Processing Prefix ***
+          if ( Serial.available() > sizeOfPrefix - 2 )
+          {
+            Serial.readBytes(buffer, sizeOfPrefix - 1);
+            for ( uint8_t counter = 0; counter < sizeOfPrefix - 1; counter++)
+            {
+              if ( buffer[counter] == prefix[counter + 1] )
+              {
+                state = STATE_DO_DATA;     // Received character is in prefix, continue
+                currentLED = 0;            // Set current LED to the first one
+              }
+              else
+              {
+                state = STATE_WAITING;     // Crap, one of the received chars is NOT in the prefix
+                break;                     // Exit, to go back to waiting for the prefix
+              } // end if buffer
+            } // end for Counter
+          } // end if Serial
+          break;
+        case STATE_DO_DATA: // *** Process incoming color data ***
+          if ( Serial.available() > 2 )      // if I receive more than 2 chars
+          {
+            Serial.readBytes( buffer, 3 );   // Abuse buffer to temp store 3 charaters
+            if (mainStatus == ON && modeStatus == BOBLIGHT)
+              setPixel( currentLED++, buffer[0], buffer[1], buffer[2]);  // and assing to LEDs
+          }
+
+          if (currentLED == LEDCOUNT) { //if it is the last LED send RGB to the satellite
+            digitalWrite(12, HIGH);
+            sendSatellite (buffer[0], buffer[1], buffer[2]);
+            digitalWrite(12, LOW);
+          }
+
+          if ( currentLED > LEDCOUNT )       // Reached the last LED? Display it!
+          {
+            if (mainStatus == ON && modeStatus == BOBLIGHT) {
+              showStrip();
+            }
+            state = STATE_WAITING;         // Reset to waiting ...
+            currentLED = 0;                // and go to LED one
+            //break;                         // and exit ... and do it all over again
+          }
+          break;
+      } // switch(state)
+    }
   }
 } // loop
 
 
 void irdata() {
+  Serial.println("received");
   irstate = RECEIVED;
 }
 
@@ -246,7 +248,7 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
 void storeCode(decode_results * results) {
   codeType = results->decode_type;
   codeValue = results->value;
-  //Serial.println(codeValue,HEX);
+  Serial.println(codeValue, HEX);
   if (codeType == REMOTE_TYPE) {
     switch (codeValue) {
       case YELLOW: //toggle boblight
@@ -254,15 +256,15 @@ void storeCode(decode_results * results) {
           case ON:
             switch (modeStatus) {
               case STATIC:
-                //                FastLED.clear();
+                LEDS.clear();
                 modeStatus = BOBLIGHT;
                 break;
               case BOBLIGHT:
                 modeStatus = STATIC;
                 state = STATE_WAITING;
-                //                FastLED.clear();
-                setColor(DEFAULT); //set the default static color
-                sendSatellite (DEFAULT, DEFAULT, DEFAULT);
+                LEDS.clear();
+                setColor(DEFAULTP); //set the default static color
+                sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
                 break;
             }
             break;
@@ -277,8 +279,8 @@ void storeCode(decode_results * results) {
             break;
           case OFF:
             mainStatus = ON;
-            setColor(DEFAULT);
-            sendSatellite (DEFAULT, DEFAULT, DEFAULT);
+            setColor(DEFAULTP);
+            sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
             break;
         }
         break;
@@ -307,10 +309,10 @@ void storeCode(decode_results * results) {
         */
     }
   }
-  delay(5);
+  delay(1); //delay(5);
 }
 
-void setColor(uint32_t color = DEFAULT) {
+void setColor(uint32_t color = DEFAULTP) {
   // if a valid command from remote control is received then execute the command, with other values (DEFAULT) set the last selected preset color
   // if the Status=ON and Boblight=Disabled
   if (mainStatus == ON && modeStatus == STATIC) {
@@ -329,15 +331,12 @@ void setColor(uint32_t color = DEFAULT) {
 }
 
 void showStrip() {
-  FastLED.show();
-  delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
+  LEDS.show();
+  //delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
-  FastLED.setPixelColor(Pixel, FastLED.Color(red, green, blue));
-  //leds[Pixel].r = red;
-  //leds[Pixel].g = green;
-  //leds[Pixel].b = blue;
+  LEDS.setPixelColor(Pixel, LEDS.Color(red, green, blue));
 }
 
 void sendSatellite (byte red, byte green, byte blue) {
