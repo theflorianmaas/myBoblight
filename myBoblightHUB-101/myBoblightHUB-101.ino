@@ -44,7 +44,7 @@ byte RGBPresets[][3] = {
 
 int RGBPresetsIndex = 0; //current RGB color preset
 
-#define RECV_PIN            3      // ir led
+#define RECV_PIN            2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
 #define BAUDRATE            115200 // Serial port speed
@@ -79,7 +79,7 @@ decode_results results;
 int codeType = -1; // The type of code
 unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
-int modeStatus  = BOBLIGHT; // STATIC //Set the initial mode
+int modeStatus  = STATIC; // STATIC //Set the initial mode
 volatile boolean irstate = false;
 #define RECEIVED   true    // - ir data received
 #define IDLE       false   // - ir idle
@@ -146,15 +146,12 @@ void setup()
 void loop()
 {
 
-  // if (irstate == RECEIVED) {
   //check if there is a command from the remote control and it is true analyze the result
   if (irrecv.decode(&results))
   {
     storeCode(&results);
     irrecv.resume(); // resume receiver
   }
-  //  irstate == IDLE;
-  //}
 
   if (mainStatus == ON) {
     if (modeStatus == BOBLIGHT) {
@@ -185,7 +182,6 @@ void loop()
               else
               {
                 state = STATE_WAITING;     // Crap, one of the received chars is NOT in the prefix
-                break;                     // Exit, to go back to waiting for the prefix
               } // end if buffer
             } // end for Counter
           } // end if Serial
@@ -211,7 +207,6 @@ void loop()
             }
             state = STATE_WAITING;         // Reset to waiting ...
             currentLED = 0;                // and go to LED one
-            //break;                         // and exit ... and do it all over again
           }
           break;
       } // switch(state)
@@ -219,11 +214,6 @@ void loop()
   }
 } // loop
 
-
-void irdata() {
-  Serial.println("received");
-  irstate = RECEIVED;
-}
 
 // Sets the color of all LEDs in the strand to 'color'
 // If 'wait'>0 then it will show a swipe from start to end
@@ -248,51 +238,43 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
 void storeCode(decode_results * results) {
   codeType = results->decode_type;
   codeValue = results->value;
-  Serial.println(codeValue, HEX);
+  //Serial.println(codeValue, HEX);
   if (codeType == REMOTE_TYPE) {
     switch (codeValue) {
       case YELLOW: //toggle boblight
-        switch (mainStatus) {
-          case ON:
-            switch (modeStatus) {
-              case STATIC:
-                LEDS.clear();
-                modeStatus = BOBLIGHT;
-                break;
-              case BOBLIGHT:
-                modeStatus = STATIC;
-                state = STATE_WAITING;
-                LEDS.clear();
-                setColor(DEFAULTP); //set the default static color
-                sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
-                break;
-            }
-            break;
+        if (mainStatus == ON) {
+          if (modeStatus == STATIC)
+          {
+            LEDS.clear();
+            modeStatus = BOBLIGHT;
+          }
+          else if (modeStatus == BOBLIGHT)
+          {
+            modeStatus = STATIC;
+            state = STATE_WAITING;
+            LEDS.clear();
+            setColor(DEFAULTP); //set the default static color
+            sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
+          }
         }
         break;
       case RED: // ON/OFF
-        switch (mainStatus) {
-          case ON:
-            mainStatus = OFF;
-            setAllLEDs(0x0, 0x0, 0x0, 0);
-            sendSatellite (0x0, 0x0, 0x0);
-            break;
-          case OFF:
-            mainStatus = ON;
-            setColor(DEFAULTP);
-            sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
-            break;
+        if (mainStatus == ON) {
+          mainStatus = OFF;
+          setAllLEDs(0x0, 0x0, 0x0, 0);
+          sendSatellite (0x0, 0x0, 0x0);
+        }
+        else if (mainStatus == OFF) {
+          mainStatus = ON;
+          setColor(DEFAULTP);
+          sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
         }
         break;
       case GREEN:
-        switch (mainStatus) {
-          case ON:
-            switch (modeStatus) {
-              case STATIC:
-                setColor(codeValue);
-                break;
-            }
-            break;
+        if (mainStatus == ON) {
+          if (modeStatus == STATIC) {
+            setColor(codeValue);
+          }
         }
         break;
         /*
@@ -332,7 +314,6 @@ void setColor(uint32_t color = DEFAULTP) {
 
 void showStrip() {
   LEDS.show();
-  //delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
