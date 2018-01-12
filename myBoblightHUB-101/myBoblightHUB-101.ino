@@ -70,7 +70,6 @@ uint8_t sizeOfPrefix = sizeof(prefix);
 #define OFF       0   // main Status OFF
 #define STATIC    10       // Static color mode  
 #define BOBLIGHT  20       // Boblight mode
-#
 //---------------------------------------------------------------------------------------------
 // IR definition
 //---------------------------------------------------------------------------------------------
@@ -80,9 +79,7 @@ int codeType = -1; // The type of code
 unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
 int modeStatus  = STATIC; // STATIC //Set the initial mode
-volatile boolean irstate = false;
-#define RECEIVED   true    // - ir data received
-#define IDLE       false   // - ir idle
+int delayMillis = 1;
 
 void setColor(uint32_t color);
 
@@ -114,9 +111,7 @@ void setup()
   pinMode(13, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(RECV_PIN, INPUT);
-  //attachInterrupt(digitalPinToInterrupt(RECV_PIN), irdata, CHANGE);
-  irrecv.enableIRIn(); // Start the receiver
-  irrecv.blink13(true);
+  initIR(); // Start the receiver
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
 #if defined (__AVR_ATtiny85__)
   if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
@@ -145,12 +140,16 @@ void setup()
 
 void loop()
 {
-
   //check if there is a command from the remote control and it is true analyze the result
   if (irrecv.decode(&results))
   {
+    //digitalWrite(13, HIGH);
     storeCode(&results);
     irrecv.resume(); // resume receiver
+    //digitalWrite(13, LOW);
+    if (modeStatus == BOBLIGHT) {
+      delayMillis = 50;
+    }
   }
 
   if (mainStatus == ON) {
@@ -204,6 +203,7 @@ void loop()
           {
             if (mainStatus == ON && modeStatus == BOBLIGHT) {
               showStrip();
+              delay(delayMillis);
             }
             state = STATE_WAITING;         // Reset to waiting ...
             currentLED = 0;                // and go to LED one
@@ -226,7 +226,7 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
     {
       // send the 'leds' array out to the actual LED strip
       showStrip();    // Show the LED color
-      delay(wait);    // and wait before we do the next LED
+      //delay(wait);    // and wait before we do the next LED
     } // if wait
 
   } // for Counter
@@ -247,12 +247,13 @@ void storeCode(decode_results * results) {
           {
             LEDS.clear();
             modeStatus = BOBLIGHT;
+            delayMillis = 5;
           }
           else if (modeStatus == BOBLIGHT)
           {
+            LEDS.clear();
             modeStatus = STATIC;
             state = STATE_WAITING;
-            LEDS.clear();
             setColor(DEFAULTP); //set the default static color
             sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
           }
@@ -291,7 +292,7 @@ void storeCode(decode_results * results) {
         */
     }
   }
-  delay(1); //delay(5);
+  //delay(1); //delay(5);
 }
 
 void setColor(uint32_t color = DEFAULTP) {
@@ -314,6 +315,7 @@ void setColor(uint32_t color = DEFAULTP) {
 
 void showStrip() {
   LEDS.show();
+  //delay(5);
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
@@ -330,6 +332,12 @@ void sendSatellite (byte red, byte green, byte blue) {
   payload[5] = blue & 0xff;  // low byte, just mask off the upper 8 bits
   xbee.send(tx);
 
+}
+
+void initIR()
+{
+  irrecv.enableIRIn(); // Start the receiver
+  irrecv.blink13(true);
 }
 
 
