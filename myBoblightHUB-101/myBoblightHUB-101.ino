@@ -24,7 +24,7 @@
 #endif
 #include "IRremote.h"
 #include <XBee.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 
 //DEFINITIONS
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
@@ -47,7 +47,7 @@ int RGBPresetsIndex = 0; //current RGB color preset
 #define RECV_PIN            2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
-#define BAUDRATE            115200 // Serial port speed
+#define BAUDRATE            250000 // Serial port speed
 #define BRIGHTNESS          100
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
@@ -66,10 +66,10 @@ uint8_t sizeOfPrefix = sizeof(prefix);
 //---------------------------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------------------------
-#define ON        1    // main Status ON
+#define ON        1   // main Status ON
 #define OFF       0   // main Status OFF
-#define STATIC    10       // Static color mode  
-#define BOBLIGHT  20       // Boblight mode
+#define STATIC    10  // Static color mode  
+#define BOBLIGHT  20  // Boblight mode
 //---------------------------------------------------------------------------------------------
 // IR definition
 //---------------------------------------------------------------------------------------------
@@ -80,6 +80,7 @@ unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
 int modeStatus  = STATIC; //Set the initial mode
 int delayMillis = 1; //delay after LEDS.show(), give the time to reenable the interrupts. Min 50ms to run properly
+unsigned long LastTimeIR = millis();
 
 void setColor(uint32_t color);
 
@@ -92,11 +93,13 @@ uint8_t readSerial;           // Read Serial data (1)
 uint8_t currentLED;           // Needed for assigning the color to the right LED
 
 // Satellite config
-// Define SoftSerial TX/RX pins
-uint8_t ssRX = 5; //TX of usb-serial device
-uint8_t ssTX = 4; //RX of usb-serial device
-// Remember to connect all devices to a common Ground: XBee, Arduino and USB-Serial device
-SoftwareSerial XbeeSerial(ssRX, ssTX);
+/* Not needed. Arduino 101 uses the serial1 (pin 0,1)
+  // Define SoftSerial TX/RX pins
+  uint8_t ssRX = 5; //TX of usb-serial device
+  uint8_t ssTX = 4; //RX of usb-serial device
+  // Remember to connect all devices to a common Ground: XBee, Arduino and USB-Serial device
+  SoftwareSerial XbeeSerial(ssRX, ssTX);
+*/
 int16_t xbeeData[6]; //array data to transmit RGB to the satellite
 XBee xbee = XBee();
 uint8_t payload[6];
@@ -122,9 +125,9 @@ void setup()
   LEDS.show();
 
   Serial.begin(BAUDRATE);   // Init serial speed
-  xbee.setSerial(XbeeSerial);
-  XbeeSerial.begin(57600);
-  xbee.begin(XbeeSerial);
+  xbee.setSerial(Serial1);
+  Serial1.begin(57600);
+  xbee.begin(Serial1);
 
   //set initial color
   if (mainStatus == ON && modeStatus == STATIC) {
@@ -143,6 +146,7 @@ void loop()
   //check if there is a command from the remote control and it is true analyze the result
   if (irrecv.decode(&results))
   {
+    LastTimeIR = millis();
     storeCode(&results);
     irrecv.resume(); // resume receiver
     if (modeStatus == BOBLIGHT) {
@@ -152,6 +156,9 @@ void loop()
       delayMillis = 1; //set the delay to the minimum
     }
   }
+
+  if (LastTimeIR <= millis() - 2000) //reset the delay after 2 seconds from the last IR received 
+    delayMillis = 1; //set the delay to the minimum
 
   if (mainStatus == ON) {
     if (modeStatus == BOBLIGHT) {
@@ -276,6 +283,7 @@ void storeCode(decode_results * results) {
         }
         break;
       case BLUE: //not used
+        delayMillis = 1; //set the minimum delay
         break;
     }
   }
