@@ -1,6 +1,6 @@
 /* Modified and commented by Fra.par
   myBoblightHUB 101
-  04/01/2018
+  13/01/2018
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -73,13 +73,13 @@ uint8_t sizeOfPrefix = sizeof(prefix);
 //---------------------------------------------------------------------------------------------
 // IR definition
 //---------------------------------------------------------------------------------------------
-IRrecv irrecv(RECV_PIN);
+IRrecv irrecv(RECV_PIN); //init IR receiver
 decode_results results;
-int codeType = -1; // The type of code
+int codeType = -1; // The type of IR received code
 unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
-int modeStatus  = STATIC; // STATIC //Set the initial mode
-int delayMillis = 1;
+int modeStatus  = STATIC; //Set the initial mode
+int delayMillis = 1; //delay after LEDS.show(), give the time to reenable the interrupts. Min 50ms to run properly
 
 void setColor(uint32_t color);
 
@@ -143,12 +143,13 @@ void loop()
   //check if there is a command from the remote control and it is true analyze the result
   if (irrecv.decode(&results))
   {
-    //digitalWrite(13, HIGH);
     storeCode(&results);
     irrecv.resume(); // resume receiver
-    //digitalWrite(13, LOW);
     if (modeStatus == BOBLIGHT) {
-      delayMillis = 50;
+      delayMillis = 50; //set the delay to renable interrupts
+    }
+    else if (modeStatus == STATIC) {
+      delayMillis = 1; //set the delay to the minimum
     }
   }
 
@@ -189,24 +190,19 @@ void loop()
           if ( Serial.available() > 2 )      // if I receive more than 2 chars
           {
             Serial.readBytes( buffer, 3 );   // Abuse buffer to temp store 3 charaters
-            if (mainStatus == ON && modeStatus == BOBLIGHT)
+            if (mainStatus == ON)
               setPixel( currentLED++, buffer[0], buffer[1], buffer[2]);  // and assing to LEDs
           }
 
-          if (currentLED == LEDCOUNT) { //if it is the last LED send RGB to the satellite
-            digitalWrite(12, HIGH);
-            sendSatellite (buffer[0], buffer[1], buffer[2]);
-            digitalWrite(12, LOW);
-          }
-
-          if ( currentLED > LEDCOUNT )       // Reached the last LED? Display it!
-          {
-            if (mainStatus == ON && modeStatus == BOBLIGHT) {
-              showStrip();
-              delay(delayMillis);
+          if (currentLED == LEDCOUNT) { //it is the last LED, send RGB to the satellite and show leds
+            if (mainStatus == ON) {
+              showStrip(); // Reached the last LED? Display it!
+              satelliteLed(HIGH);
+              sendSatellite (buffer[0], buffer[1], buffer[2]);
+              satelliteLed(LOW);
             }
             state = STATE_WAITING;         // Reset to waiting ...
-            currentLED = 0;                // and go to LED one
+            currentLED = 0;   // and go to LED one
           }
           break;
       } // switch(state)
@@ -226,7 +222,7 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
     {
       // send the 'leds' array out to the actual LED strip
       showStrip();    // Show the LED color
-      //delay(wait);    // and wait before we do the next LED
+      delay(wait);    // and wait before we do the next LED
     } // if wait
 
   } // for Counter
@@ -247,12 +243,13 @@ void storeCode(decode_results * results) {
           {
             LEDS.clear();
             modeStatus = BOBLIGHT;
-            delayMillis = 5;
+            delayMillis = 1; //BOBLIGHT enabled, set the minimum delay
           }
           else if (modeStatus == BOBLIGHT)
           {
             LEDS.clear();
             modeStatus = STATIC;
+            delayMillis = 1; //BOBLIGHT enabled, set the minimum delay
             state = STATE_WAITING;
             setColor(DEFAULTP); //set the default static color
             sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
@@ -267,8 +264,8 @@ void storeCode(decode_results * results) {
         }
         else if (mainStatus == OFF) {
           mainStatus = ON;
-          setColor(DEFAULTP);
-          sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
+          setColor(codeValue);
+          delayMillis = 1; //set the minimum delay
         }
         break;
       case GREEN:
@@ -278,21 +275,10 @@ void storeCode(decode_results * results) {
           }
         }
         break;
-        /*
-          case BLUE:
-          switch (satelliteStatus) {
-            case ON:
-              satelliteStatus = OFF;
-              break;
-            case OFF:
-              satelliteStatus = ON;
-              break;
-          }
-          break;
-        */
+      case BLUE: //not used
+        break;
     }
   }
-  //delay(1); //delay(5);
 }
 
 void setColor(uint32_t color = DEFAULTP) {
@@ -310,12 +296,12 @@ void setColor(uint32_t color = DEFAULTP) {
     }
   }
   //show the color
-  setAllLEDs(aRGB[0], aRGB[1], aRGB[2], 10);
+  setAllLEDs(aRGB[0], aRGB[1], aRGB[2], 5);
 }
 
 void showStrip() {
   LEDS.show();
-  //delay(5);
+  delay(delayMillis);
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
@@ -338,6 +324,10 @@ void initIR()
 {
   irrecv.enableIRIn(); // Start the receiver
   irrecv.blink13(true);
+}
+
+void satelliteLed(int sts) {
+  digitalWrite(12, sts);
 }
 
 
