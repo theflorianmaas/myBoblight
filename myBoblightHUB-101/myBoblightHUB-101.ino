@@ -44,11 +44,14 @@ byte RGBPresets[][3] = {
 
 int RGBPresetsIndex = 0; //current RGB color preset
 
-#define RECV_PIN            2      // ir led
+#define RECVPIN             2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
 #define BAUDRATE            250000 // Serial port speed
 #define BRIGHTNESS          100
+#define RESETPIN            9      /* Triggers the power signal */
+
+int pulse_time = 8;
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
 char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
@@ -73,7 +76,7 @@ uint8_t sizeOfPrefix = sizeof(prefix);
 //---------------------------------------------------------------------------------------------
 // IR definition
 //---------------------------------------------------------------------------------------------
-IRrecv irrecv(RECV_PIN); //init IR receiver
+IRrecv irrecv(RECVPIN); //init IR receiver
 decode_results results;
 int codeType = -1; // The type of IR received code
 unsigned long codeValue; // The code value if not raw
@@ -113,7 +116,8 @@ void setup()
 {
   pinMode(13, OUTPUT);
   pinMode(12, OUTPUT);
-  pinMode(RECV_PIN, INPUT);
+  pinMode(RECVPIN, INPUT);
+  pinMode(RESETPIN, OUTPUT);
   initIR(); // Start the receiver
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
 #if defined (__AVR_ATtiny85__)
@@ -157,7 +161,7 @@ void loop()
     }
   }
 
-  if (LastTimeIR <= millis() - 2000) //reset the delay after 2 seconds from the last IR received 
+  if (LastTimeIR <= millis() - 2000) //reset the delay after 2 seconds from the last IR received
     delayMillis = 1; //set the delay to the minimum
 
   if (mainStatus == ON) {
@@ -282,8 +286,14 @@ void storeCode(decode_results * results) {
           }
         }
         break;
-      case BLUE: //not used
+      case BLUE: //TURN ON, TURN OFF. ONLY for UDOO X86
         delayMillis = 1; //set the minimum delay
+        for (int i = 0; i < 5; i++) {
+          digitalWrite(RESETPIN, LOW);
+          delay(pulse_time); /* Reset pin goes LOW for 8ms */
+          digitalWrite(RESETPIN, HIGH);
+          delay(pulse_time); /* Reset pin goes HIGH for 8ms */
+        }
         break;
     }
   }
