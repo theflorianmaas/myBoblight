@@ -219,6 +219,7 @@ void irdata() {
   irstate = RECEIVED;
 }
 
+
 // Sets the color of all LEDs in the strand to 'color'
 // If 'wait'>0 then it will show a swipe from start to end
 void setAllLEDs(byte r, byte g, byte b, int wait)
