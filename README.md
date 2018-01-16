@@ -58,5 +58,6 @@ Pattern mode
 
 ### Arduino 101
 With Arduino 101 use this IRremote library https://github.com/jimaobian/Arduino-IRremote
+
 Replace Fastled with Adafruit Neopixel library
 Use the sketch myBoblightHUB-101
