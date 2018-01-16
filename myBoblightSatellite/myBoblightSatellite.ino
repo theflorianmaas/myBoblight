@@ -1,6 +1,6 @@
 /* Modified and commented by Fra.par
   myBoblightSatellite
-  17/10/2016
+  18/10/2016
 
   BOBLIGHT  enable Boblight, color changed based on the screen color
 
