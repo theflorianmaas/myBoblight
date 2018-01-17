@@ -1,6 +1,6 @@
 /* Modified and commented by Fra.par
   myBoblightHUB
-  22/10/2016
+  17/01/2018
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -48,7 +48,7 @@ int RGBPresetsIndex = 0; //current RGB color preset
 #define RECV_PIN            2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
 #define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
-#define SHOWDELAY           200    // Delay in micro seconds before showing default 200
+//#define SHOWDELAY           200    // Delay in micro seconds before showing default 200
 #define BAUDRATE            115200 //115200 // Serial port speed
 #define LEDTYPE             WS2812B
 #define COLORORDER          GRB
@@ -85,8 +85,13 @@ int modeStatus  = STATIC; //Set the initial mode
 volatile boolean irstate = false;
 #define RECEIVED   true    // - ir data received
 #define IDLE       false   // - ir idle
+int showDelayMicros = 200; //delay after LEDS.show(), give the time to reenable the interrupts. Min 50ms to run properly
+unsigned long LastTimeIR = millis();
 
 void setColor(uint32_t color);
+void sendSatellite (byte red, byte green, byte blue);
+void setPixel(int Pixel, byte red, byte green, byte blue);
+void showStrip();
 
 int state;                   // Define current state
 #define STATE_WAITING   1    // - Waiting for prefix
@@ -143,11 +148,21 @@ void loop()
     //check if there is a command from the remote control and it is true analyze the result
     if (irrecv.decode(&results))
     {
+      LastTimeIR = millis();
       storeCode(&results);
       irrecv.resume(); // resume receiver
+      if (modeStatus == BOBLIGHT) {
+        showDelayMicros = 10000; //set the delay to renable interrupts
+      }
+      else if (modeStatus == STATIC) {
+        showDelayMicros = 200; //set the delay to the minimum
+      }
     }
     irstate == IDLE;
   }
+
+  if (LastTimeIR <= millis() - 2000) //reset the delay after 2 seconds from the last IR received
+    showDelayMicros = 200; //set the delay to the minimum
 
   switch (mainStatus) {
     case ON:
@@ -247,66 +262,59 @@ void storeCode(decode_results * results) {
   codeValue = results->value;
   //Serial.println(codeValue,HEX);
   if (codeType == REMOTE_TYPE) {
-    switch (codeValue) {
-      case YELLOW: //toggle boblight
-        switch (mainStatus) {
-          case ON:
-            switch (modeStatus) {
-              case STATIC:
-                FastLED.clear();
-                modeStatus = BOBLIGHT;
-                break;
-              case BOBLIGHT:
-                modeStatus = STATIC;
-                state = STATE_WAITING;
-                FastLED.clear();
-                setColor(DEFAULT); //set the default static color
-                sendSatellite (DEFAULT, DEFAULT, DEFAULT);
-                break;
-            }
-            break;
-        }
-        break;
-      case RED: // ON/OFF
-        switch (mainStatus) {
-          case ON:
-            mainStatus = OFF;
-            setAllLEDs(0x0, 0x0, 0x0, 0);
-            sendSatellite (0x0, 0x0, 0x0);
-            break;
-          case OFF:
-            mainStatus = ON;
-            setColor(DEFAULT);
-            sendSatellite (DEFAULT, DEFAULT, DEFAULT);
-            break;
-        }
-        break;
-      case GREEN:
-        switch (mainStatus) {
-          case ON:
-            switch (modeStatus) {
-              case STATIC:
-                setColor(codeValue);
-                break;
-            }
-            break;
-        }
-        break;
-        /*
-          case BLUE:
-          switch (satelliteStatus) {
-            case ON:
-              satelliteStatus = OFF;
+    if (codeValue == YELLOW) {
+      //toggle boblight
+      switch (mainStatus) {
+        case ON:
+          switch (modeStatus) {
+            case STATIC:
+              FastLED.clear();
+              modeStatus = BOBLIGHT;
               break;
-            case OFF:
-              satelliteStatus = ON;
+            case BOBLIGHT:
+              modeStatus = STATIC;
+              state = STATE_WAITING;
+              FastLED.clear();
+              setColor(DEFAULT); //set the default static color
               break;
           }
           break;
-        */
+      }
+    }
+    else if (codeValue == RED) { // ON/OFF
+      switch (mainStatus) {
+        case ON:
+          mainStatus = OFF;
+          setAllLEDs(0x0, 0x0, 0x0, 0);
+          sendSatellite (0x0, 0x0, 0x0);
+          break;
+        case OFF:
+          mainStatus = ON;
+          setColor(codeValue);
+          showDelayMicros = 200; //set the delay to the minimum
+          break;
+      }
+    }
+    else if (codeValue == GREEN) {
+      switch (mainStatus) {
+        case ON:
+          switch (modeStatus) {
+            case STATIC:
+              setColor(codeValue);
+              break;
+          }
+          break;
+      }
+      showDelayMicros = 200; //set the delay to the minimum
+    }
+    else if (codeValue == BLUE) {
+      showDelayMicros = 200; //set the delay to the minimum
+    }
+    else {
+      showDelayMicros = 200; //set the delay to the minimum
     }
   }
-  delay(5);
+  //delay(5);
 }
 
 void setColor(uint32_t color = DEFAULT) {
@@ -325,11 +333,12 @@ void setColor(uint32_t color = DEFAULT) {
   }
   //show the color
   setAllLEDs(aRGB[0], aRGB[1], aRGB[2], 10);
+  sendSatellite (aRGB[0], aRGB[1], aRGB[2]);
 }
 
 void showStrip() {
   FastLED.show();
-  //delayMicroseconds(SHOWDELAY);  // Wait a few micro seconds
+  delayMicroseconds(showDelayMicros);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {

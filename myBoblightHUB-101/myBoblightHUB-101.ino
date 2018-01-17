@@ -136,7 +136,7 @@ void setup()
   //set initial color
   if (mainStatus == ON && modeStatus == STATIC) {
     setColor(DEFAULTP); //set the default static color
-    sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
+    sendSatellite (0x0, 0x0, 0xFF);
   }
   else if (mainStatus == ON && modeStatus == BOBLIGHT) {
     setAllLEDs(0x0, 0x0, 0x0, 0); //turn off all leds
@@ -312,9 +312,10 @@ void setColor(uint32_t color = DEFAULTP) {
       aRGB[1] = RGBPresets[RGBPresetsIndex][1];
       aRGB[2] = RGBPresets[RGBPresetsIndex][2];
     }
-  }
-  //show the color
+    /show the color
   setAllLEDs(aRGB[0], aRGB[1], aRGB[2], 5);
+  }
+  /
 }
 
 void showStrip() {
