@@ -24,7 +24,7 @@
 #endif
 #include "IRremote.h"
 #include <XBee.h>
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 
 //DEFINITIONS
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
@@ -96,13 +96,13 @@ uint8_t readSerial;           // Read Serial data (1)
 uint8_t currentLED;           // Needed for assigning the color to the right LED
 
 // Satellite config
-/* Not needed. Arduino 101 uses the serial1 (pin 0,1)
+// Not needed. Arduino 101 uses the serial1 (pin 0,1)
   // Define SoftSerial TX/RX pins
   uint8_t ssRX = 5; //TX of usb-serial device
   uint8_t ssTX = 4; //RX of usb-serial device
   // Remember to connect all devices to a common Ground: XBee, Arduino and USB-Serial device
   SoftwareSerial XbeeSerial(ssRX, ssTX);
-*/
+
 int16_t xbeeData[6]; //array data to transmit RGB to the satellite
 XBee xbee = XBee();
 uint8_t payload[6];
@@ -128,11 +128,6 @@ void setup()
   LEDS.setBrightness(BRIGHTNESS);
   LEDS.show();
 
-  Serial.begin(BAUDRATE);   // Init serial speed
-  xbee.setSerial(Serial1);
-  Serial1.begin(57600);
-  xbee.begin(Serial1);
-
   //set initial color
   if (mainStatus == ON && modeStatus == STATIC) {
     setColor(DEFAULTP); //set the default static color
@@ -143,6 +138,12 @@ void setup()
     sendSatellite (0x0, 0x0, 0x0);
   }
   state = STATE_WAITING;    // Initial state: Waiting for prefix
+
+  Serial.begin(BAUDRATE);   // Init serial speed
+  XbeeSerial.begin(57600);
+  xbee.setSerial(XbeeSerial);
+  xbee.begin(XbeeSerial);
+  //while (!Serial1);
 }
 
 void loop()
@@ -238,6 +239,7 @@ void setAllLEDs(byte r, byte g, byte b, int wait)
 
   } // for Counter
   showStrip();    // Show the LED color
+  sendSatellite (r,g,b);
 } // setAllLEDs
 
 // Stores the code for later playback
@@ -263,7 +265,7 @@ void storeCode(decode_results * results) {
             delayMillis = 1; //BOBLIGHT enabled, set the minimum delay
             state = STATE_WAITING;
             setColor(DEFAULTP); //set the default static color
-            sendSatellite (DEFAULTP, DEFAULTP, 0xFF);
+            sendSatellite (0x0, 0x0, 0xFF);
           }
         }
         break;
