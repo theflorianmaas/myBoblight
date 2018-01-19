@@ -24,7 +24,6 @@
 #endif
 #include "IRremote.h"
 #include <XBee.h>
-#include <SoftwareSerial.h>
 
 //DEFINITIONS
 byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
@@ -95,14 +94,6 @@ uint8_t state;               // - Define current status
 uint8_t readSerial;           // Read Serial data (1)
 uint8_t currentLED;           // Needed for assigning the color to the right LED
 
-// Satellite config
-// Not needed. Arduino 101 uses the serial1 (pin 0,1)
-  // Define SoftSerial TX/RX pins
-  uint8_t ssRX = 5; //TX of usb-serial device
-  uint8_t ssTX = 4; //RX of usb-serial device
-  // Remember to connect all devices to a common Ground: XBee, Arduino and USB-Serial device
-  SoftwareSerial XbeeSerial(ssRX, ssTX);
-
 int16_t xbeeData[6]; //array data to transmit RGB to the satellite
 XBee xbee = XBee();
 uint8_t payload[6];
@@ -140,10 +131,10 @@ void setup()
   state = STATE_WAITING;    // Initial state: Waiting for prefix
 
   Serial.begin(BAUDRATE);   // Init serial speed
-  XbeeSerial.begin(57600);
-  xbee.setSerial(XbeeSerial);
-  xbee.begin(XbeeSerial);
-  //while (!Serial1);
+  Serial1.begin(57600);
+  xbee.setSerial(Serial1);
+  xbee.begin(Serial1);
+  while (!Serial1);
 }
 
 void loop()
@@ -314,10 +305,9 @@ void setColor(uint32_t color = DEFAULTP) {
       aRGB[1] = RGBPresets[RGBPresetsIndex][1];
       aRGB[2] = RGBPresets[RGBPresetsIndex][2];
     }
-    /show the color
+    //show the color
   setAllLEDs(aRGB[0], aRGB[1], aRGB[2], 5);
   }
-  /
 }
 
 void showStrip() {
