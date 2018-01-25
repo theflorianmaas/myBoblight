@@ -1,35 +1,45 @@
-/* Modified and commented by Fra.par
+/* Modified and commented by theflorianmaas
   myBoblightHUB 101
   14/01/2018
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
-    YELLOW button = toggle static / boblight / preset mode
-    BLUE button = change pattern preset
+    YELLOW button = toggle static / boblight 
+    BLUE button = Turn ON/OFF. For Udoo X86 only
 
   STATIC    set a static color
   BOBLIGHT  enable Boblight, color changed based on the screen color
-  PATTERN   set a color animation (not used)
 
-  myBoblightHUB101 is free software and can be distributed and/or modified
+  Supported boards
+  Arduino UNO and derivates
+  Arduino 101 
+
+  Hardware support
+  Adafruit Neopixel or WS2812B led strip
+  TSOP38283 IR Receiver or similar
+
+  This software is free and can be distributed and/or modified
   freely as long as the copyright notice remains in place.
   Nobody is allowed to charge you for this code.
   Use of this code is entirely at your own risk.
 */
 
-
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
 #include <avr/power.h>
 #endif
-#include "IRremote.h"
+#include "IRremote.h" //with Arduino 101 use this version https://github.com/jimaobian/Arduino-IRremote
 #include <XBee.h>
 
-//DEFINITIONS
-byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
-//define variables to store RGB color values
-#define MAX_PRESET_INDEX 7 //# of RBG color presets -1
+#if !defined (__arc__) //if it is not Arduino 101 use software serial
+#include <SoftwareSerial.h>
+#endif
 
+// Color preset
+//---------------------------------------------------------------------------------------------
+byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
+//define variables for the RGB color values
+#define MAX_PRESET_INDEX 7 //# of RBG color presets -1
 byte RGBPresets[][3] = {
   { 0,    0,    0x7D }, //blue
   { 0xFF, 0,    0    }, //red
@@ -40,24 +50,23 @@ byte RGBPresets[][3] = {
   { 0xE2, 0x17, 0xE2 }, //magenta
   { 0xFF, 0xFF, 0    }, //yellow
 };
-
 int RGBPresetsIndex = 0; //current RGB color preset
+//---------------------------------------------------------------------------------------------
 
 #define RECVPIN             2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
-#define LEDCOUNT            60     // Number of LEDs used for boblight left 16, top 27, right 16
+#define LEDCOUNT            60     // Number of LEDs. 59 in the led strip +1 for the satellite 
 #define BAUDRATE            250000 // Serial port speed
 #define BRIGHTNESS          100
 #define RESETPIN            9      /* Triggers the power signal */
-
-int pulse_time = 8;
+#define PULSETIME           8 
 
 const char prefix[] = {0x41, 0x64, 0x61, 0x00, 0x18, 0x4D};  // Start prefix ADA
 char buffer[sizeof(prefix)]; // Temporary buffer for receiving prefix data
 uint8_t sizeOfPrefix = sizeof(prefix);
 
 // Remote control Definitions
-// Change these values if you a different remote control. See the IRemote library for reference
+// Change these values if you have a different remote control. See the IRemote library for reference
 //---------------------------------------------------------------------------------------------
 #define REMOTE_TYPE SONY
 #define RED      0x52E9 // red button
@@ -67,6 +76,7 @@ uint8_t sizeOfPrefix = sizeof(prefix);
 #define DEFAULTP 0x0    // default color preset
 //---------------------------------------------------------------------------------------------
 
+// Remote control Definitions
 //---------------------------------------------------------------------------------------------
 #define ON        1   // main Status ON
 #define OFF       0   // main Status OFF
@@ -81,8 +91,17 @@ int codeType = -1; // The type of IR received code
 unsigned long codeValue; // The code value if not raw
 int mainStatus  = ON; //Set the initial value
 int modeStatus  = STATIC; //Set the initial mode
-int delayMillis = 1; //delay after LEDS.show(), give the time to reenable the interrupts. Min 50ms to run properly
-unsigned long LastTimeIR = millis();
+int showDelayMicros = 200; //delay after LEDS.show(), give the time to re-enable the interrupts. Min 50ms to run properly
+unsigned long LastTimeIR = millis(); //time of the last received IR signal 
+
+//---------------------------------------------------------------------------------------------
+// Software serial 
+//---------------------------------------------------------------------------------------------
+#if !defined (__arc__)  //if it is not Arduino 101 use softwareSerial, otherwise Hardware serial1
+uint8_t ssRX = 5; //TX of usb-serial device
+uint8_t ssTX = 4; //RX of usb-serial device
+SoftwareSerial Serial1(ssRX, ssTX);
+#endif
 
 void setColor(uint32_t color);
 
@@ -111,9 +130,9 @@ void setup()
   pinMode(RESETPIN, OUTPUT);
   initIR(); // Start the receiver
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
-#if defined (__AVR_ATtiny85__)
-  if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
-#endif
+  #if defined (__AVR_ATtiny85__)
+    if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
+  #endif
   // End of trinket special code
   LEDS.begin(); // This initializes the NeoPixel library.
   LEDS.setBrightness(BRIGHTNESS);
@@ -146,15 +165,15 @@ void loop()
     storeCode(&results);
     irrecv.resume(); // resume receiver
     if (modeStatus == BOBLIGHT) {
-      delayMillis = 50; //set the delay to renable interrupts
+      showDelayMicros = 50000; //set the delay to renable interrupts
     }
     else if (modeStatus == STATIC) {
-      delayMillis = 1; //set the delay to the minimum
+      showDelayMicros = 200; //set the delay to the minimum
     }
   }
 
   if (LastTimeIR <= millis() - 2000) //reset the delay after 2 seconds from the last IR received
-    delayMillis = 1; //set the delay to the minimum
+    showDelayMicros = 200; //set the delay to the minimum
 
   if (mainStatus == ON) {
     if (modeStatus == BOBLIGHT) {
@@ -247,13 +266,13 @@ void storeCode(decode_results * results) {
           {
             LEDS.clear();
             modeStatus = BOBLIGHT;
-            delayMillis = 1; //BOBLIGHT enabled, set the minimum delay
+            showDelayMicros = 200; //BOBLIGHT enabled, set the minimum delay
           }
           else if (modeStatus == BOBLIGHT)
           {
             LEDS.clear();
             modeStatus = STATIC;
-            delayMillis = 1; //BOBLIGHT enabled, set the minimum delay
+            showDelayMicros = 200; //BOBLIGHT enabled, set the minimum delay
             state = STATE_WAITING;
             setColor(DEFAULTP); //set the default static color
             sendSatellite (0x0, 0x0, 0xFF);
@@ -269,7 +288,7 @@ void storeCode(decode_results * results) {
         else if (mainStatus == OFF) {
           mainStatus = ON;
           setColor(codeValue);
-          delayMillis = 1; //set the minimum delay
+          showDelayMicros = 200; //set the minimum delay
         }
         break;
       case GREEN:
@@ -280,12 +299,12 @@ void storeCode(decode_results * results) {
         }
         break;
       case BLUE: //TURN ON, TURN OFF. ONLY for UDOO X86
-        delayMillis = 1; //set the minimum delay
+        showDelayMicros = 200; //set the minimum delay
         for (int i = 0; i < 5; i++) {
           digitalWrite(RESETPIN, LOW);
-          delay(pulse_time); /* Reset pin goes LOW for 8ms */
+          delay(PULSETIME); /* Reset pin goes LOW for 8ms */
           digitalWrite(RESETPIN, HIGH);
-          delay(pulse_time); /* Reset pin goes HIGH for 8ms */
+          delay(PULSETIME); /* Reset pin goes HIGH for 8ms */
         }
         break;
     }
@@ -312,7 +331,7 @@ void setColor(uint32_t color = DEFAULTP) {
 
 void showStrip() {
   LEDS.show();
-  delay(delayMillis);
+  delayMicroseconds(showDelayMicros);  // Wait a few micro seconds
 }
 
 void setPixel(int Pixel, byte red, byte green, byte blue) {
@@ -320,7 +339,7 @@ void setPixel(int Pixel, byte red, byte green, byte blue) {
 }
 
 void sendSatellite (byte red, byte green, byte blue) {
-
+  //send the color to the satellite by xbee
   payload[0] = red >> 8 & 0xff; // High byte - shift bits 8 places, 0xff masks off the upper 8 bits
   payload[1] = red & 0xff;  // low byte, just mask off the upper 8 bits
   payload[2] = green >> 8 & 0xff; // High byte - shift bits 8 places, 0xff masks off the upper 8 bits
