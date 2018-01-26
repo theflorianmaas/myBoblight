@@ -13,7 +13,7 @@ Need a IR receiver like a **TSOP31238** to enable this feature.
 
 ###Technical overview
 
-This sketch has been tested on Arduino Uno and Aduino Duemilanove. 
+This sketch has been tested on Arduino Uno and Aduino 101. 
 It should work on others models, but you have to change the ir receiver pin, according to the interrupt configuration.
 The current sketch uses the pin 2 and the interrupt 0.
 
@@ -24,9 +24,7 @@ It needs the **FASTLED** and **IRemote** libraries.
 Pin 2 = ir receiver
 Pin 6 = Led strip data
 
-![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblightIr3.png)
-
-If the number of leds is huge the +5v output on Arduino is not able to supply enought current. In this case an external power source is connected in parallel.
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblight_bb.png)
 
 The used remote control is a Sony. You can try with different brands changing the brand name and the key codes. See the IRremote library for further details.
 
@@ -43,8 +41,8 @@ The used remote control is a Sony. You can try with different brands changing th
 
 - **RED** 		On/Off  Off=all leds off
 - **GREEN**		Change the static color when the Static mode is selected
-- **YELLOW**	Mode selector. Static Color/Boblight/Pattern 
-- **BLUE**		Change the pattern when the Pattern mode is selected
+- **YELLOW**	Mode selector. Static Color/Boblight
+- **BLUE**		
 
 
 Static mode
@@ -53,12 +51,12 @@ Static mode
 Boblight mode
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/boblight.png?raw=true)
 
-Pattern mode
-![](https://github.com/theflorianmaas/myBoblight/blob/master/images/pattern.png?raw=true)
+Satellite
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/bedroom.jpg?raw=true)
 
 ### Arduino 101
 With Arduino 101 use this IRremote library https://github.com/jimaobian/Arduino-IRremote
 
 Replace Fastled with Adafruit Neopixel library
 
-Use the sketch myBoblightHUB-101
+
