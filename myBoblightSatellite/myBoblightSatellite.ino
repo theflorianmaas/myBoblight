@@ -2,7 +2,12 @@
   myBoblightSatellite
   18/10/2016
 
-  BOBLIGHT  enable Boblight, color changed based on the screen color
+  Supported boards
+  Arduino UNO and compatible boards
+
+  Hardware support
+  Adafruit Neopixel/WS2812B led strip or IKEA Dioder
+  Xbee Series 1
 
   myBoblightSatellite is free software and can be distributed and/or modified
   freely as long as the copyright notice remains in place.
@@ -48,9 +53,7 @@ uint8_t ssRX = 5; //TX of usb-serial device
 uint8_t ssTX = 4; //RX of usb-serial device
 // Remember to connect all devices to a common Ground: XBee, Arduino and USB-Serial device
 SoftwareSerial XbeeSerial(ssRX, ssTX);
-int16_t xbeeData[6]; //array data to transmit RGB to the satellite
 XBee xbee = XBee();
-uint8_t payload[6];
 XBeeResponse response = XBeeResponse();
 // create reusable response objects for responses we expect to handle
 Rx16Response rx16 = Rx16Response();
@@ -69,7 +72,8 @@ void setup()
   pinMode(pinBlue[1], OUTPUT);
   pinMode(pinGreen[1], OUTPUT);
 
-  /*
+  /* 
+  WS2812B led strip 
     FastLED.addLeds<LEDTYPE, DATAPIN, COLORORDER>(leds, LEDCOUNT).setCorrection(TypicalLEDStrip);  // Use this for WS2812B
     // set master brightness control
     FastLED.setBrightness(BRIGHTNESS);
@@ -88,13 +92,11 @@ void loop()
   xbee.readPacket();
   if (xbee.getResponse().isAvailable()) {
     // got something
-    Serial.println("Ricevuto qualcosa");
     if (xbee.getResponse().getApiId() == RX_16_RESPONSE || xbee.getResponse().getApiId() == RX_64_RESPONSE) {
       // got a rx packet
       if (xbee.getResponse().getApiId() == RX_16_RESPONSE) {
         xbee.getResponse().getRx16Response(rx16);
         option = rx16.getOption();
-        //data = rx16.getData(0);
         int dataLength = rx16.getDataLength();
         for (int i = 0; i < dataLength; i = i + 2)
         {
