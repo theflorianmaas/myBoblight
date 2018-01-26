@@ -24,7 +24,7 @@ It needs the **FASTLED** and **IRemote** libraries.
 Pin 2 = ir receiver
 Pin 6 = Led strip data
 
-![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblightIr3.png)
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblight_bb.png)
 
 If the number of leds is huge the +5v output on Arduino is not able to supply enought current. In this case an external power source is connected in parallel.
 
