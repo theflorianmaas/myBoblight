@@ -17,7 +17,8 @@ This sketch has been tested on Arduino Uno and Aduino 101.
 It should work on others models, but you have to change the ir receiver pin, according to the interrupt configuration.
 The current sketch uses the pin 2 and the interrupt 0.
 
-It needs the **FASTLED** and **IRemote** libraries.
+To compile the sketch install the **Adafruit Neopixel** and **IRemote** libraries.
+With Arduino 101 use this **IRemote** library: https://github.com/jimaobian/Arduino-IRremote
 
 ####Pin configuration
 
@@ -42,7 +43,7 @@ The used remote control is a Sony. You can try with different brands changing th
 - **RED** 		On/Off  Off=all leds off
 - **GREEN**		Change the static color when the Static mode is selected
 - **YELLOW**	Mode selector. Static Color/Boblight
-- **BLUE**		
+- **BLUE**		Switch ON/OFF the device. it works with UDOO X86 only
 
 
 Static mode
@@ -57,6 +58,6 @@ Satellite
 ### Arduino 101
 With Arduino 101 use this IRremote library https://github.com/jimaobian/Arduino-IRremote
 
-Replace Fastled with Adafruit Neopixel library
+
 
 
