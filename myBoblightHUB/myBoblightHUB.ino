@@ -1,6 +1,7 @@
 /* Modified and commented by theflorianmaas
-  myBoblightHUB 101
-  14/01/2018
+  myBoblightHUB 101 
+  27/01/2018
+  Version 1.0
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
