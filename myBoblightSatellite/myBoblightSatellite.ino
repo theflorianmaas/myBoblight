@@ -30,7 +30,7 @@ byte aRGB[] = { 0, 0, 125 }; //define variables to store RGB color values
 #define DATAPIN  2      // Datapin for WS2812B LED strip
 int pinRed[] = { 6, 9 };         // Ikea Dioder pins
 int pinBlue[] = { 7, 10 };
-int pinGreen[] = { 8, 11 };
+int pinGreen[] = { 8, 11 }; 
 
 //#define LEDCOUNT          50     // Number of LEDs used WS2812b
 #define LEDCOUNT            1      // Ikea Dioder
