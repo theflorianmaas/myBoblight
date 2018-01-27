@@ -18,14 +18,21 @@ It should work on others models, but you have to change the ir receiver pin, acc
 The current sketch uses the pin 2 and the interrupt 0.
 
 To compile the sketch install the **Adafruit Neopixel** and **IRemote** libraries.
-With Arduino 101 use this **IRemote** library: https://github.com/jimaobian/Arduino-IRremote
+#Arduino 101
+With Arduino 101 this **IRemote** library must be used: https://github.com/jimaobian/Arduino-IRremote
 
-####Pin configuration
+
+#### Pin configuration
 
 Pin 2 = ir receiver
 Pin 6 = Led strip data
 
+### Breadboard
+
 ![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblight_bb.png)
+
+### Schema
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblight_schem.png)
 
 The used remote control is a Sony. You can try with different brands changing the brand name and the key codes. See the IRremote library for further details.
 
@@ -55,8 +62,6 @@ Boblight mode
 Satellite
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/bedroom.jpg?raw=true)
 
-### Arduino 101
-With Arduino 101 use this IRremote library https://github.com/jimaobian/Arduino-IRremote
 
 
 
