@@ -7,9 +7,11 @@ This is an enanhancement of the project described here:
 Arduino sketch to drive a **WS2812B** LEDs strip with Boblight or selected static colors.
 As additional feature it integrates a IR Receiver in order to change the backlight configuration by a TV remote control. 
 
-You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control, set a static color or a color pattern.
+You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control, set a static color.
 
 Need a IR receiver like a **TSOP31238** to enable this feature.
+
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/Slide1.jpg)
 
 ### Technical overview
 
