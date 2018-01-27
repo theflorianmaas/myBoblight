@@ -11,7 +11,7 @@ You can toggle (enable/disable) Boblight by a Sony Bravia Remote Control, set a 
 
 Need a IR receiver like a **TSOP31238** to enable this feature.
 
-###Technical overview
+### Technical overview
 
 This sketch has been tested on Arduino Uno and Aduino 101. 
 It should work on others models, but you have to change the ir receiver pin, according to the interrupt configuration.
@@ -22,7 +22,7 @@ To compile the sketch install the **Adafruit Neopixel** and **IRemote** librarie
 With Arduino 101 this **IRemote** library must be used: https://github.com/jimaobian/Arduino-IRremote
 
 
-#### Pin configuration
+### Pin configuration
 
 Pin 2 = ir receiver
 Pin 6 = Led strip data
@@ -34,7 +34,7 @@ Pin 6 = Led strip data
 ### Schema
 ![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/myBoblight_schem.png)
 
-The used remote control is a Sony. You can try with different brands changing the brand name and the key codes. See the IRremote library for further details.
+Tested with a Sony TV remote control. You can try with different brands changing the brand name and the key codes. See the IRremote library for further details.
 
 - "#define REMOTE_TYPE	SONY"
 - "#define RED     		0x52E9 // red button"
@@ -62,6 +62,10 @@ Boblight mode
 Satellite
 ![](https://github.com/theflorianmaas/myBoblight/blob/master/images/bedroom.jpg?raw=true)
 
+### TV Vesa mounting
+UDOO X86 running Libreelec, mounted onto the TV back
+
+![](https://github.com/theflorianmaas/myBoblight/blob/master/images/remotecontrol.jpg?raw=true)
 
 
 
