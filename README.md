@@ -65,7 +65,7 @@ Satellite
 ### TV Vesa mounting
 UDOO X86 running Libreelec, mounted onto the TV back
 
-![](https://github.com/theflorianmaas/myBoblight/blob/master/images/remotecontrol.jpg?raw=true)
+![](https://raw.githubusercontent.com/theflorianmaas/myBoblight/master/images/TVMounting.jpg)
 
 
 
