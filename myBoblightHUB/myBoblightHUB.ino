@@ -1,7 +1,7 @@
 /* Modified and commented by theflorianmaas
   myBoblightHUB 101 
-  27/01/2018
-  Version 1.0
+  19/08/2018
+  Version 1.0.1
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -56,8 +56,8 @@ int RGBPresetsIndex = 0; //current RGB color preset
 
 #define RECVPIN             2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
-#define LEDCOUNT            60     // Number of LEDs. 59 in the led strip +1 for the satellite 
-#define BAUDRATE            250000 // Serial port speed
+#define LEDCOUNT            76     // Number of LEDs. 75 in the led strip +1 for the satellite 
+#define BAUDRATE            230400 // Serial port speed
 #define BRIGHTNESS          100
 #define RESETPIN            9      /* Triggers the power signal */
 #define PULSETIME           8 
@@ -121,7 +121,7 @@ uint8_t payload[6];
 Tx16Request tx = Tx16Request(0xFFFF, payload, sizeof(payload));
 TxStatusResponse txStatus = TxStatusResponse();
 
-Adafruit_NeoPixel LEDS = Adafruit_NeoPixel(LEDCOUNT, DATAPIN);
+Adafruit_NeoPixel LEDS = Adafruit_NeoPixel(LEDCOUNT-1, DATAPIN);
 
 void setup()
 {
