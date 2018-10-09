@@ -56,9 +56,9 @@ int RGBPresetsIndex = 0; //current RGB color preset
 
 #define RECVPIN             2      // ir led
 #define DATAPIN             6      // Datapin for WS2812B LED strip
-#define LEDCOUNT            60     // Number of LEDs. 75 in the led strip +1 for the satellite 
+#define LEDCOUNT            59     // Last LED Number. 58+1 
 #define BAUDRATE            115200 // Serial port speed
-#define BRIGHTNESS          99     // % of led brightness
+#define BRIGHTNESS          170     // level 0-255 of led brightness
 #define RESETPIN            9      /* Triggers the power signal */
 #define PULSETIME           8
 #define MAX_LED_COUNT       512
@@ -117,7 +117,7 @@ uint8_t state;               // - Define current status
 int highByte, lowByte, checksum;
 
 uint8_t readSerial;           // Read Serial data (1)
-uint8_t currentLED;           // Needed for assigning the color to the right LED
+uint8_t currentLED = 0;           // Needed for assigning the color to the right LED
 
 int16_t xbeeData[6]; //array data to transmit RGB to the satellite
 XBee xbee = XBee();
@@ -127,8 +127,6 @@ Tx16Request tx = Tx16Request(0xFFFF, payload, sizeof(payload));
 TxStatusResponse txStatus = TxStatusResponse();
 
 Adafruit_NeoPixel LEDS = Adafruit_NeoPixel(LEDCOUNT, DATAPIN, NEO_GRB + NEO_KHZ800);
-
-int cntx = 0;
 
 void setup()
 {
@@ -142,7 +140,7 @@ void setup()
 #endif
   // End of trinket special code
   LEDS.begin(); // This initializes the NeoPixel library.
-  LEDS.setBrightness(255 / 100 * BRIGHTNESS);
+  LEDS.setBrightness(BRIGHTNESS);
   LEDS.show();
 
   //set initial color
@@ -187,65 +185,73 @@ void loop()
   switch (state)
   {
     case STATE_WAITING:                  // *** Waiting for prefix ***
-
       // Wait for first byte of 'Ada'
-      cntx = 0; //count prefix bytes
-      for (int i = 0; i < sizeof(prefix); ++i)
+      if ( Serial.available() > 2 )      // if I receive more than 2 chars
       {
-        while (!Serial.available());
-        // Check next byte in Magic Word
-        if (prefix[i] == Serial.read())
-          cntx++;
-      }
-      if (cntx == sizeof(prefix))
+        for (int i = 0; i < sizeof(prefix); ++i)
+        {
+          if (prefix[i] != Serial.read())
+            return;
+        }
         state = STATE_DO_PREFIX; //if Ada prefix received then next step
+      }
       break;
 
     case STATE_DO_PREFIX:                // *** Processing Prefix ***
       // Wait for highByte, lowByte, Checksum to be available
-      while (Serial.available() < 3);
-      // Read high and low byte and the checksum
-      highByte = Serial.read();
-      lowByte  = Serial.read();
-      checksum = Serial.read();
-
-      if (checksum != (highByte ^ lowByte ^ 0x55))
+      if ( Serial.available() > 2 )      // if I receive more than 2 chars
       {
-        // Checksum check failed
-        state = STATE_WAITING;
-        break;
-      }
-      else { //checksum OK
-        //ledCount = ((highByte & 0x00FF) << 8 | (lowByte & 0x00FF) ) + 1;
-        state = STATE_DO_DATA;
-        //if (ledCount > MAX_LED_COUNT)
-        //{
+        // Read high and low byte and the checksum
+        Serial.readBytes( buffer, 3); //read 3 bytes from serial highByte,lowByte,checksum
+        //highByte = Serial.read();
+        //lowByte  = Serial.read();
+        //checksum = Serial.read();
+
+        if (buffer[2] != (buffer[0] ^ buffer[1] ^ 0x55)) //check checksum
+        {
+          // Checksum check failed
+          state = STATE_WAITING;
+          break;
+        }
+        else { //checksum OK
+          //ledCount = ((highByte & 0x00FF) << 8 | (lowByte & 0x00FF) ) + 1;
+          state = STATE_DO_DATA;
+          //if (ledCount > MAX_LED_COUNT)
+          //{
           // Make sure that we do not read more data dan available in the buffer
           //ledCount = MAX_LED_COUNT;
-        //}
+          //}
+        }
       }
       break;
 
-    case STATE_DO_DATA: // *** Process incoming color data ***     
+    case STATE_DO_DATA: // *** Process incoming color data ***
       if ( Serial.available() > 2 )      // if I receive more than 2 chars
       {
         Serial.readBytes( buffer, 3);   // Abuse buffer to temp store 3 charaters
-        if (mainStatus == ON && modeStatus == DYNAMIC)
-          setPixel( currentLED++, buffer[0], buffer[1], buffer[2]);  // and assing to LEDs
+        if (currentLED != LEDCOUNT) { //it is NOT the last LED, send RGB to current led
+          if (mainStatus == ON && modeStatus == DYNAMIC) {
+            setPixel( currentLED++, buffer[0], buffer[1], buffer[2]);  // and assing to LEDs
+          }
+        }
+        else if (currentLED == LEDCOUNT) { //it is the last LED, send RGB to the satellite and show leds
+        {
+            if (mainStatus == ON && modeStatus == DYNAMIC) 
+            {
+             showStrip(); // Reached the last LED? Display it!
+             satelliteLed(HIGH);
+             sendSatellite (buffer[0], buffer[1], buffer[2]);
+             satelliteLed(LOW);
+            }
+            state = STATE_WAITING;         // Reset to waiting ...
+            currentLED = 0;   // and go to LED one
+        }
       }
 
-      if (currentLED == LEDCOUNT) { //it is the last LED, send RGB to the satellite and show leds
-        if (mainStatus == ON && modeStatus == DYNAMIC) {
-          showStrip(); // Reached the last LED? Display it!
-          satelliteLed(HIGH);
-          sendSatellite (buffer[0], buffer[1], buffer[2]);
-          satelliteLed(LOW);
-        }
-        state = STATE_WAITING;         // Reset to waiting ...
-        currentLED = 0;   // and go to LED one
-      }
-      break;
-  } // switch(state)
+  }
+  break;
+
+} // switch(state)
 
 } // loop
 
