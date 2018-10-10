@@ -1,7 +1,8 @@
 /* Modified and commented by theflorianmaas
   myHyperionHUB 101
-  09/10/2018
+  10/10/2018
   Version 1.0
+  Boblight (Momo) and Hyperion (Adalight) support
   Addded - Change background color by a Sony Bravia remote control
     RED button = on/off off=all leds off
     GREEN button = change RGB color preset
@@ -54,16 +55,16 @@ byte RGBPresets[][3] = {
 int RGBPresetsIndex = 0; //current RGB color preset
 //---------------------------------------------------------------------------------------------
 
-#define RECVPIN             2      // ir led
+// change values in this section to configure the sketch
+#define RECVPIN             2      // ir led pin
 #define DATAPIN             6      // Datapin for WS2812B LED strip
-#define LEDCOUNT            59     // Last LED Number. 58+1 
-#define BAUDRATE            115200 // Serial port speed
-#define BRIGHTNESS          170     // level 0-255 of led brightness
-#define RESETPIN            9      /* Triggers the power signal */
-#define PULSETIME           8
-#define MAX_LED_COUNT       512
+#define RESETPIN            9      // Triggers the power signal. UDOO X86 only
+#define LEDCOUNT            75     // SET the number of leds in the strip 
+#define BAUDRATE            460800 // Serial port speed
+// end section -------------------------------------------
 
-uint16_t ledCount = LEDCOUNT;
+#define BRIGHTNESS          170     // level 0-255 of led brightness
+#define PULSETIME           8
 
 /// The prefix for start sending led-data
 static const uint8_t prefix[] = {'A', 'd', 'a'};  // Start prefix ADA
@@ -114,9 +115,7 @@ uint8_t state;               // - Define current status
 #define STATE_WAITING   1    // - Waiting for prefix
 #define STATE_DO_PREFIX 2    // - Processing prefix
 #define STATE_DO_DATA   3    // - Handling incoming LED colors
-int highByte, lowByte, checksum;
 
-uint8_t readSerial;           // Read Serial data (1)
 uint8_t currentLED = 0;           // Needed for assigning the color to the right LED
 
 int16_t xbeeData[6]; //array data to transmit RGB to the satellite
@@ -160,7 +159,6 @@ void setup()
   xbee.begin(Serial1);
   // Send 'Ada' string to host
   Serial.print("Ada\n");
-  //while (!Serial1);
 }
 
 void loop()
@@ -203,10 +201,6 @@ void loop()
       {
         // Read high and low byte and the checksum
         Serial.readBytes( buffer, 3); //read 3 bytes from serial highByte,lowByte,checksum
-        //highByte = Serial.read();
-        //lowByte  = Serial.read();
-        //checksum = Serial.read();
-
         if (buffer[2] != (buffer[0] ^ buffer[1] ^ 0x55)) //check checksum
         {
           // Checksum check failed
@@ -216,11 +210,6 @@ void loop()
         else { //checksum OK
           //ledCount = ((highByte & 0x00FF) << 8 | (lowByte & 0x00FF) ) + 1;
           state = STATE_DO_DATA;
-          //if (ledCount > MAX_LED_COUNT)
-          //{
-          // Make sure that we do not read more data dan available in the buffer
-          //ledCount = MAX_LED_COUNT;
-          //}
         }
       }
       break;
@@ -259,7 +248,7 @@ void loop()
 // If 'wait'>0 then it will show a swipe from start to end
 void setAllLEDs(byte r, byte g, byte b, int wait)
 {
-  for ( int counter = 0; counter < ledCount; counter++ )  // For each LED
+  for ( int counter = 0; counter < LEDCOUNT; counter++ )  // For each LED
   {
     setPixel(counter, r, g, b);  // .. set the color
     if ( wait > 0 )                       // if a wait time was set then
@@ -368,8 +357,7 @@ void sendSatellite (byte red, byte green, byte blue) {
   payload[3] = green & 0xff;  // low byte, just mask off the upper 8 bits
   payload[4] = blue >> 8 & 0xff; // High byte - shift bits 8 places, 0xff masks off the upper 8 bits
   payload[5] = blue & 0xff;  // low byte, just mask off the upper 8 bits
-  //xbee.send(tx);
-
+  xbee.send(tx);
 }
 
 void initIR()
